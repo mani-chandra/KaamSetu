@@ -58,6 +58,7 @@ export function AdminNav() {
     { href: "/admin/bookings", label: "Bookings" },
     { href: "/admin/users", label: "Users" },
     { href: "/admin/categories", label: "Categories" },
+    { href: "/admin/pro-options", label: "Pro Options" },
     { href: "/admin/banners", label: "Banners" },
     { href: "/admin/reports", label: "Reports" },
   ];

@@ -1,5 +1,11 @@
 import { PrismaClient, UserRole, ProfessionalStatus, BadgeType, MembershipTarget } from "@prisma/client";
 import { hashPassword } from "../src/lib/password";
+import {
+  DEFAULT_COMMON_SKILLS,
+  DEFAULT_LANGUAGES,
+  DEFAULT_SERVICE_AREAS_BY_CITY,
+  DEFAULT_SKILLS_BY_CATEGORY,
+} from "../src/lib/pro-options-defaults";
 
 const prisma = new PrismaClient();
 
@@ -96,6 +102,61 @@ async function main() {
     });
   }
 
+  const allCategories = await prisma.serviceCategory.findMany();
+  for (const category of allCategories) {
+    await prisma.predefinedSkill.upsert({
+      where: { categoryId_name: { categoryId: category.id, name: category.name } },
+      update: { isActive: true, sortOrder: 0 },
+      create: { categoryId: category.id, name: category.name, sortOrder: 0 },
+    });
+
+    const slugSkills = DEFAULT_SKILLS_BY_CATEGORY[category.slug] ?? [];
+    for (const [i, skillName] of slugSkills.entries()) {
+      if (skillName === category.name) continue;
+      await prisma.predefinedSkill.upsert({
+        where: { categoryId_name: { categoryId: category.id, name: skillName } },
+        update: { isActive: true, sortOrder: i + 1 },
+        create: { categoryId: category.id, name: skillName, sortOrder: i + 1 },
+      });
+    }
+  }
+
+  for (const [i, skillName] of DEFAULT_COMMON_SKILLS.entries()) {
+    const existing = await prisma.predefinedSkill.findFirst({
+      where: { categoryId: null, name: skillName },
+    });
+    if (existing) {
+      await prisma.predefinedSkill.update({
+        where: { id: existing.id },
+        data: { isActive: true, sortOrder: i },
+      });
+    } else {
+      await prisma.predefinedSkill.create({
+        data: { categoryId: null, name: skillName, sortOrder: i },
+      });
+    }
+  }
+
+  const allCities = await prisma.city.findMany();
+  for (const city of allCities) {
+    const areas = DEFAULT_SERVICE_AREAS_BY_CITY[city.name] ?? [];
+    for (const [i, areaName] of areas.entries()) {
+      await prisma.predefinedServiceArea.upsert({
+        where: { cityId_name: { cityId: city.id, name: areaName } },
+        update: { isActive: true, sortOrder: i },
+        create: { cityId: city.id, name: areaName, sortOrder: i },
+      });
+    }
+  }
+
+  for (const [i, lang] of DEFAULT_LANGUAGES.entries()) {
+    await prisma.predefinedLanguage.upsert({
+      where: { name: lang },
+      update: { isActive: true, sortOrder: i },
+      create: { name: lang, sortOrder: i },
+    });
+  }
+
   const plumberCategory = await prisma.serviceCategory.findUnique({ where: { slug: "plumber" } });
   const electricianCategory = await prisma.serviceCategory.findUnique({ where: { slug: "electrician" } });
 
@@ -118,7 +179,7 @@ async function main() {
           skills: ["Pipe repair", "Bathroom fitting", "Water heater", "Leak detection"],
           languages: ["Hindi", "English", "Marathi"],
           certifications: ["Licensed Plumber - MH State"],
-          serviceAreas: ["Andheri", "Bandra", "Juhu", "Powai"],
+          serviceAreas: ["Andheri West", "Bandra", "Juhu", "Powai"],
           responseTime: 30,
           completedJobs: 245,
           avgRating: 4.8,
@@ -179,7 +240,7 @@ async function main() {
           skills: ["Home wiring", "Smart switches", "MCB repair", "Fan installation"],
           languages: ["Hindi", "English"],
           certifications: ["Electrical License"],
-          serviceAreas: ["Andheri", "Goregaon", "Malad"],
+          serviceAreas: ["Andheri West", "Goregaon", "Malad"],
           responseTime: 45,
           completedJobs: 156,
           avgRating: 4.7,

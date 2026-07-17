@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { createNotification } from "@/lib/notifications";
+import { validateProSelections } from "@/lib/pro-options";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -28,6 +29,24 @@ export async function POST(req: Request) {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+    }
+
+    const categories = data.categoryIds.length
+      ? await prisma.serviceCategory.findMany({
+          where: { id: { in: data.categoryIds } },
+          select: { slug: true },
+        })
+      : [];
+
+    const validationErrors = await validateProSelections({
+      skills: data.skills,
+      serviceAreas: data.serviceAreas,
+      languages: data.languages,
+      city: data.city,
+      categorySlugs: categories.map((c) => c.slug),
+    });
+    if (validationErrors.length > 0) {
+      return NextResponse.json({ error: validationErrors[0] }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(data.password);

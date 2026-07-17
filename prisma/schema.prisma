@@ -219,6 +219,7 @@ model ServiceCategory {
   professionalServices ProfessionalService[]
   favoriteServices     FavoriteService[]
   bookings             Booking[]
+  predefinedSkills     PredefinedSkill[]
 }
 
 model ServicePage {
@@ -266,7 +267,7 @@ model Availability {
 
   professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
-  @@unique([professionalId, dayOfWeek])
+  @@index([professionalId, dayOfWeek])
 }
 
 model PortfolioItem {
@@ -529,5 +530,43 @@ model City {
   slug      String   @unique
   state     String?
   isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  serviceAreas PredefinedServiceArea[]
+}
+
+model PredefinedSkill {
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String?
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  category ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+}
+
+model PredefinedServiceArea {
+  id        String   @id @default(cuid())
+  name      String
+  cityId    String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([cityId, name])
+  @@index([cityId])
+}
+
+model PredefinedLanguage {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 }

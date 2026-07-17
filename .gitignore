@@ -39,8 +39,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# uploads
-/public/uploads
+# uploads (keep folder, ignore files)
+/public/uploads/*
+!/public/uploads/.gitkeep
 
 # local database
 /prisma/dev.db

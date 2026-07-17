@@ -5,36 +5,27 @@ India's trusted platform for local services — connecting customers with verifi
 ## Tech Stack
 
 - **Next.js 15** (App Router) + TypeScript
-- **PostgreSQL** + Prisma ORM
+- **SQLite** (local dev) / **PostgreSQL** (production) + Prisma ORM
 - **NextAuth.js v5** (role-based auth: Customer, Professional, Admin)
 - **Tailwind CSS** + shadcn/ui components
-- **Razorpay** (payments — demo mode without keys)
+- **Razorpay** (payments — real checkout when keys are set)
+- **Resend** (email notifications when API key is set)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Docker (optional, for PostgreSQL in production)
 
-### Setup
+### Local setup
 
 ```bash
-# Install dependencies
 npm install
-
-# Copy environment file
 cp .env.example .env
-
-# Push schema and seed demo data (uses SQLite locally)
 npm run db:push
 npm run db:seed
-
-# Start development server
 npm run dev
 ```
-
-For PostgreSQL production setup, update `prisma/schema.prisma` provider to `postgresql`, set `DATABASE_URL` in `.env`, and run `docker compose up -d`.
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -46,44 +37,41 @@ Open [http://localhost:3000](http://localhost:3000).
 | Customer | customer@demo.com | customer123 |
 | Professional | pro@demo.com | pro123 |
 
-## Features
+## Launch-Ready MVP Features
 
-### Customer
-- Browse service categories and search with filters
-- View professional profiles with reviews and badges
-- Instant booking or quote-based requests
-- Track bookings, pay, and leave reviews
-- Save favorite professionals
+- **Pro profile editing** — bio, photo, skills, pricing, availability, portfolio
+- **Quote accept/decline** — customers confirm quotes from dashboard
+- **Razorpay checkout** — real payment modal with signature verification (demo mode without keys)
+- **Email notifications** — booking events via Resend (console log in dev without key)
+- **Admin CMS** — create/manage categories and promotional banners
+- **File uploads** — profile photos and portfolio images (`/public/uploads`)
 
-### Professional
-- Multi-step registration with admin approval
-- Digital business card (public profile)
-- Manage bookings (accept/decline, send quotes)
-- View earnings and respond to reviews
-- Achievement badges
+## Environment Variables
 
-### Admin
-- Approve/reject professional registrations
-- Manage users, bookings, categories, banners
-- Platform analytics and reports
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | `file:./dev.db` locally, PostgreSQL URL in production |
+| `AUTH_SECRET` | Yes | Random secret for NextAuth sessions |
+| `AUTH_URL` | Yes | App URL (e.g. `http://localhost:3000`) |
+| `RAZORPAY_KEY_ID` | For payments | Razorpay dashboard |
+| `RAZORPAY_KEY_SECRET` | For payments | Razorpay dashboard |
+| `RESEND_API_KEY` | For emails | [resend.com](https://resend.com) |
+| `EMAIL_FROM` | For emails | Verified sender address |
 
-### Platform
-- In-app notifications
-- Razorpay payment integration (demo fallback)
-- Membership plans (customer + professional)
-- Multi-city support
-- Recommendation engine
+## Production Deploy (Vercel + PostgreSQL)
 
-## Project Structure
+1. Push repo to GitHub
+2. Create a PostgreSQL database ([Neon](https://neon.tech) or [Supabase](https://supabase.com))
+3. In `prisma/schema.prisma`, set `provider = "postgresql"`
+4. Deploy to [Vercel](https://vercel.com) and set all env variables
+5. Run migrations: `npx prisma db push` (or add a build script)
+6. Seed production once: `npm run db:seed`
 
-```
-src/
-├── app/              # Next.js pages and API routes
-├── components/       # UI and feature components
-└── lib/              # Auth, Prisma, payments, notifications
-prisma/
-├── schema.prisma     # Full data model
-└── seed.ts           # Demo data
+Or use Docker locally for Postgres:
+
+```bash
+docker compose up -d
+# Set DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kaamsetu
 ```
 
 ## Scripts

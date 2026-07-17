@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, Star, Users, Clock } from "lucide-react";
 
 export default async function HomePage() {
-  const [categories, stats] = await Promise.all([
+  const [categories, stats, banners] = await Promise.all([
     prisma.serviceCategory.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -18,6 +18,11 @@ export default async function HomePage() {
       prisma.booking.count({ where: { status: "COMPLETED" } }),
       prisma.serviceCategory.count({ where: { isActive: true } }),
     ]),
+    prisma.promotionalBanner.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+      take: 3,
+    }),
   ]);
 
   const [proCount, completedJobs, categoryCount] = stats;
@@ -43,6 +48,23 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {banners.length > 0 && (
+        <section className="py-8 border-b bg-white">
+          <div className="container mx-auto px-4 flex flex-wrap gap-4 justify-center">
+            {banners.map((banner) => (
+              <Link
+                key={banner.id}
+                href={banner.linkUrl || "/search"}
+                className="px-6 py-3 rounded-lg bg-brand/5 border border-brand/20 hover:bg-brand/10 transition-colors"
+              >
+                <div className="font-medium text-brand">{banner.title}</div>
+                {banner.subtitle && <div className="text-sm text-muted-foreground">{banner.subtitle}</div>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="py-12 border-b">
         <div className="container mx-auto px-4">

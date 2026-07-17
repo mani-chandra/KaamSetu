@@ -7,6 +7,7 @@ import { BookingStatusBadge } from "@/components/booking/status-badge";
 import { BookingTimeline } from "@/components/booking/timeline";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { PaymentButton } from "@/components/payments/payment-button";
+import { QuoteAcceptActions } from "@/components/booking/quote-accept-actions";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 
@@ -70,7 +71,11 @@ export default async function BookingDetailPage({
 
           <BookingTimeline history={booking.statusHistory} />
 
-          {booking.status === "COMPLETED" && !booking.payment && booking.amount && (
+          {booking.status === "QUOTED" && booking.quote?.status === "SENT" && (
+            <QuoteAcceptActions bookingId={booking.id} amount={booking.quote.amount} />
+          )}
+
+          {booking.status === "COMPLETED" && booking.payment?.status !== "PAID" && booking.amount && (
             <PaymentButton bookingId={booking.id} amount={booking.amount} />
           )}
 

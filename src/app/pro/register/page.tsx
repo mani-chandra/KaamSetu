@@ -8,13 +8,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { OptionPicker } from "@/components/pro/option-picker";
 
 type Category = { id: string; name: string; slug: string };
+type CityOption = { id: string; name: string };
 
 export default function ProRegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
+  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [areaOptions, setAreaOptions] = useState<string[]>([]);
+  const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -25,10 +38,10 @@ export default function ProRegisterPage() {
     city: "",
     bio: "",
     experienceYears: 0,
-    skills: "",
-    languages: "",
+    skills: [] as string[],
+    languages: [] as string[],
     certifications: "",
-    serviceAreas: "",
+    serviceAreas: [] as string[],
     categoryIds: [] as string[],
   });
 
@@ -36,7 +49,26 @@ export default function ProRegisterPage() {
     fetch("/api/categories")
       .then((r) => r.json())
       .then((data) => setCategories(data.categories || []));
+    fetch("/api/cities")
+      .then((r) => r.json())
+      .then((data) => setCities(data.cities || []));
   }, []);
+
+  useEffect(() => {
+    if (!form.city && step < 2) return;
+    const slugs = categories
+      .filter((c) => form.categoryIds.includes(c.id))
+      .map((c) => c.slug)
+      .join(",");
+    const params = new URLSearchParams({ city: form.city, categories: slugs });
+    fetch(`/api/pro/options?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setSkillOptions(data.skills || []);
+        setAreaOptions(data.serviceAreas || []);
+        setLanguageOptions(data.languages || []);
+      });
+  }, [form.city, form.categoryIds, categories, step]);
 
   function update(field: string, value: string | number | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -60,10 +92,7 @@ export default function ProRegisterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
-        languages: form.languages.split(",").map((s) => s.trim()).filter(Boolean),
         certifications: form.certifications.split(",").map((s) => s.trim()).filter(Boolean),
-        serviceAreas: form.serviceAreas.split(",").map((s) => s.trim()).filter(Boolean),
       }),
     });
 
@@ -109,50 +138,29 @@ export default function ProRegisterPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>City</Label>
-                  <Input value={form.city} onChange={(e) => update("city", e.target.value)} />
+                  <Select value={form.city} onValueChange={(v) => update("city", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <Button onClick={() => setStep(2)} className="w-full">Continue</Button>
+              <Button onClick={() => setStep(2)} className="w-full" disabled={!form.city}>
+                Continue
+              </Button>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>About you</Label>
-                <Textarea value={form.bio} onChange={(e) => update("bio", e.target.value)} rows={4} />
-              </div>
-              <div className="space-y-2">
-                <Label>Years of experience</Label>
-                <Input type="number" min={0} value={form.experienceYears} onChange={(e) => update("experienceYears", Number(e.target.value))} />
-              </div>
-              <div className="space-y-2">
-                <Label>Skills (comma separated)</Label>
-                <Input value={form.skills} onChange={(e) => update("skills", e.target.value)} placeholder="Pipe repair, Installation" />
-              </div>
-              <div className="space-y-2">
-                <Label>Languages (comma separated)</Label>
-                <Input value={form.languages} onChange={(e) => update("languages", e.target.value)} placeholder="Hindi, English" />
-              </div>
-              <div className="space-y-2">
-                <Label>Certifications (comma separated)</Label>
-                <Input value={form.certifications} onChange={(e) => update("certifications", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Service areas (comma separated)</Label>
-                <Input value={form.serviceAreas} onChange={(e) => update("serviceAreas", e.target.value)} placeholder="Andheri, Bandra" />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-                <Button onClick={() => setStep(3)} className="flex-1">Continue</Button>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <div className="space-y-2">
                 <Label>Services you offer</Label>
+                <p className="text-xs text-muted-foreground">Select categories first — skills will update based on your selection.</p>
                 <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {categories.map((cat) => (
                     <label
@@ -171,13 +179,64 @@ export default function ProRegisterPage() {
                   ))}
                 </div>
               </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+                <Button onClick={() => setStep(3)} className="flex-1" disabled={form.categoryIds.length === 0}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>About you</Label>
+                <Textarea value={form.bio} onChange={(e) => update("bio", e.target.value)} rows={4} />
+              </div>
+              <div className="space-y-2">
+                <Label>Years of experience</Label>
+                <Input type="number" min={0} value={form.experienceYears} onChange={(e) => update("experienceYears", Number(e.target.value))} />
+              </div>
+
+              <OptionPicker
+                label="Skills"
+                options={skillOptions}
+                selected={form.skills}
+                onChange={(skills) => update("skills", skills)}
+              />
+
+              <OptionPicker
+                label="Service areas you cover"
+                options={areaOptions}
+                selected={form.serviceAreas}
+                onChange={(serviceAreas) => update("serviceAreas", serviceAreas)}
+                emptyMessage={`Select areas in ${form.city}.`}
+              />
+
+              <OptionPicker
+                label="Languages"
+                options={languageOptions}
+                selected={form.languages}
+                onChange={(languages) => update("languages", languages)}
+              />
+
+              <div className="space-y-2">
+                <Label>Certifications (comma separated)</Label>
+                <Input value={form.certifications} onChange={(e) => update("certifications", e.target.value)} />
+              </div>
+
               <p className="text-sm text-muted-foreground">
-                Your profile will be reviewed by our admin team before going live. You&apos;ll receive a notification once approved.
+                Your profile will be reviewed by our admin team before going live.
               </p>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-                <Button onClick={handleSubmit} disabled={loading} className="flex-1">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || form.skills.length === 0 || form.serviceAreas.length === 0}
+                  className="flex-1"
+                >
                   {loading ? "Submitting..." : "Submit for Review"}
                 </Button>
               </div>
