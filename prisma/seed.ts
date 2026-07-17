@@ -1,0 +1,280 @@
+import { PrismaClient, UserRole, ProfessionalStatus, BadgeType, MembershipTarget } from "@prisma/client";
+import { hashPassword } from "../src/lib/password";
+
+const prisma = new PrismaClient();
+
+const categories = [
+  { name: "Plumber", slug: "plumber", icon: "🔧", description: "Pipe repairs, leak fixes, bathroom fittings, and water system maintenance." },
+  { name: "Electrician", slug: "electrician", icon: "⚡", description: "Wiring, switchboard repairs, appliance installation, and electrical safety checks." },
+  { name: "Carpenter", slug: "carpenter", icon: "🪚", description: "Furniture repair, custom woodwork, door/window fitting, and modular solutions." },
+  { name: "AC Technician", slug: "ac-technician", icon: "❄️", description: "AC installation, servicing, gas refill, and cooling system repairs." },
+  { name: "Cleaner", slug: "cleaner", icon: "🧹", description: "Home deep cleaning, office cleaning, move-in/move-out cleaning services." },
+  { name: "Tutor", slug: "tutor", icon: "📚", description: "Personal tutoring for school subjects, competitive exams, and skill development." },
+  { name: "Home Chef", slug: "home-chef", icon: "👨‍🍳", description: "Personal chefs for daily meals, parties, and special dietary requirements." },
+  { name: "Driver", slug: "driver", icon: "🚗", description: "Personal drivers, outstation trips, and chauffeur services." },
+  { name: "Childcare", slug: "childcare", icon: "👶", description: "Babysitting, nanny services, and child care for working parents." },
+  { name: "Photographer", slug: "photographer", icon: "📷", description: "Event photography, portraits, product shoots, and wedding coverage." },
+  { name: "Makeup Artist", slug: "makeup-artist", icon: "💄", description: "Bridal makeup, party looks, and professional beauty services." },
+  { name: "Fitness Trainer", slug: "fitness-trainer", icon: "💪", description: "Personal training, yoga, and fitness coaching at home or gym." },
+  { name: "Elder Care", slug: "elder-care", icon: "🤝", description: "Compassionate care for seniors including companionship and daily assistance." },
+  { name: "Delivery Personnel", slug: "delivery", icon: "📦", description: "Local delivery, courier, and pickup services." },
+];
+
+const cities = [
+  { name: "Mumbai", slug: "mumbai", state: "Maharashtra" },
+  { name: "Delhi", slug: "delhi", state: "Delhi" },
+  { name: "Bangalore", slug: "bangalore", state: "Karnataka" },
+  { name: "Hyderabad", slug: "hyderabad", state: "Telangana" },
+  { name: "Chennai", slug: "chennai", state: "Tamil Nadu" },
+  { name: "Pune", slug: "pune", state: "Maharashtra" },
+];
+
+async function main() {
+  const adminPassword = await hashPassword("admin123");
+  const customerPassword = await hashPassword("customer123");
+  const proPassword = await hashPassword("pro123");
+
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@kaamsetu.com" },
+    update: {},
+    create: {
+      email: "admin@kaamsetu.com",
+      name: "Platform Admin",
+      passwordHash: adminPassword,
+      role: UserRole.ADMIN,
+      city: "Mumbai",
+    },
+  });
+
+  const customer = await prisma.user.upsert({
+    where: { email: "customer@demo.com" },
+    update: {},
+    create: {
+      email: "customer@demo.com",
+      name: "Demo Customer",
+      passwordHash: customerPassword,
+      role: UserRole.CUSTOMER,
+      phone: "+91 9876543210",
+      city: "Mumbai",
+      customerProfile: {
+        create: {
+          address: "Andheri West, Mumbai",
+          pincode: "400058",
+        },
+      },
+    },
+  });
+
+  for (const city of cities) {
+    await prisma.city.upsert({
+      where: { slug: city.slug },
+      update: city,
+      create: city,
+    });
+  }
+
+  for (const [index, cat] of categories.entries()) {
+    await prisma.serviceCategory.upsert({
+      where: { slug: cat.slug },
+      update: { ...cat, sortOrder: index },
+      create: {
+        ...cat,
+        sortOrder: index,
+        servicePage: {
+          create: {
+            headline: `Professional ${cat.name} Services`,
+            content: cat.description,
+            whatsIncluded: ["Verified professionals", "Transparent pricing", "Customer reviews", "Booking support"],
+            pricingGuidance: "Prices vary based on scope. Instant booking available for standard services.",
+            faq: [
+              { q: `How do I book a ${cat.name.toLowerCase()}?`, a: "Search, compare profiles, and book instantly or request a quote." },
+              { q: "Are professionals verified?", a: "Yes, all professionals are verified by our admin team before going live." },
+            ],
+          },
+        },
+      },
+    });
+  }
+
+  const plumberCategory = await prisma.serviceCategory.findUnique({ where: { slug: "plumber" } });
+  const electricianCategory = await prisma.serviceCategory.findUnique({ where: { slug: "electrician" } });
+
+  const proUser = await prisma.user.upsert({
+    where: { email: "pro@demo.com" },
+    update: {},
+    create: {
+      email: "pro@demo.com",
+      name: "Rajesh Kumar",
+      passwordHash: proPassword,
+      role: UserRole.PROFESSIONAL,
+      phone: "+91 9876543211",
+      city: "Mumbai",
+      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200",
+      professionalProfile: {
+        create: {
+          status: ProfessionalStatus.APPROVED,
+          bio: "Licensed plumber with 12 years of experience in residential and commercial plumbing.",
+          experienceYears: 12,
+          skills: ["Pipe repair", "Bathroom fitting", "Water heater", "Leak detection"],
+          languages: ["Hindi", "English", "Marathi"],
+          certifications: ["Licensed Plumber - MH State"],
+          serviceAreas: ["Andheri", "Bandra", "Juhu", "Powai"],
+          responseTime: 30,
+          completedJobs: 245,
+          avgRating: 4.8,
+          reviewCount: 89,
+          isVerified: true,
+          services: plumberCategory
+            ? {
+                create: [
+                  {
+                    categoryId: plumberCategory.id,
+                    title: "General Plumbing",
+                    description: "All types of plumbing repairs and installations",
+                    priceType: "fixed",
+                    price: 499,
+                  },
+                ],
+              }
+            : undefined,
+          availability: {
+            create: [
+              { dayOfWeek: 1, startTime: "09:00", endTime: "18:00" },
+              { dayOfWeek: 2, startTime: "09:00", endTime: "18:00" },
+              { dayOfWeek: 3, startTime: "09:00", endTime: "18:00" },
+              { dayOfWeek: 4, startTime: "09:00", endTime: "18:00" },
+              { dayOfWeek: 5, startTime: "09:00", endTime: "18:00" },
+              { dayOfWeek: 6, startTime: "10:00", endTime: "16:00" },
+            ],
+          },
+          badges: {
+            create: [
+              { type: BadgeType.VERIFIED, label: "Verified Professional", description: "Identity and credentials verified" },
+              { type: BadgeType.TOP_RATED, label: "Top Rated", description: "Consistently rated 4.5+ stars" },
+              { type: BadgeType.EXPERIENCED, label: "Experienced Pro", description: "100+ completed jobs" },
+            ],
+          },
+        },
+      },
+    },
+    include: { professionalProfile: true },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "priya@demo.com" },
+    update: {},
+    create: {
+      email: "priya@demo.com",
+      name: "Priya Sharma",
+      passwordHash: proPassword,
+      role: UserRole.PROFESSIONAL,
+      phone: "+91 9876543212",
+      city: "Mumbai",
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200",
+      professionalProfile: {
+        create: {
+          status: ProfessionalStatus.APPROVED,
+          bio: "Certified electrician specializing in home wiring and smart home installations.",
+          experienceYears: 8,
+          skills: ["Home wiring", "Smart switches", "MCB repair", "Fan installation"],
+          languages: ["Hindi", "English"],
+          certifications: ["Electrical License"],
+          serviceAreas: ["Andheri", "Goregaon", "Malad"],
+          responseTime: 45,
+          completedJobs: 156,
+          avgRating: 4.7,
+          reviewCount: 62,
+          isVerified: true,
+          services: electricianCategory
+            ? {
+                create: [
+                  {
+                    categoryId: electricianCategory.id,
+                    title: "Electrical Services",
+                    priceType: "quote",
+                    minPrice: 300,
+                    maxPrice: 5000,
+                  },
+                ],
+              }
+            : undefined,
+        },
+      },
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "pending@demo.com" },
+    update: {},
+    create: {
+      email: "pending@demo.com",
+      name: "Amit Pending",
+      passwordHash: proPassword,
+      role: UserRole.PROFESSIONAL,
+      city: "Delhi",
+      professionalProfile: {
+        create: {
+          status: ProfessionalStatus.PENDING,
+          bio: "New carpenter looking to join the platform.",
+          experienceYears: 3,
+          skills: ["Furniture repair"],
+          languages: ["Hindi"],
+          serviceAreas: ["South Delhi"],
+        },
+      },
+    },
+  });
+
+  for (const plan of [
+    {
+      name: "KaamSetu Plus",
+      slug: "customer-plus",
+      target: MembershipTarget.CUSTOMER,
+      description: "Priority booking, exclusive discounts, and service warranty",
+      price: 299,
+      features: ["Priority booking", "10% discount", "Service warranty", "Exclusive offers"],
+    },
+    {
+      name: "Pro Premium",
+      slug: "pro-premium",
+      target: MembershipTarget.PROFESSIONAL,
+      description: "Boosted visibility, analytics, and premium profile placement",
+      price: 499,
+      features: ["Profile boost", "Business analytics", "Priority support", "Premium badge"],
+    },
+  ]) {
+    await prisma.membershipPlan.upsert({
+      where: { slug: plan.slug },
+      update: plan,
+      create: plan,
+    });
+  }
+
+  await prisma.promotionalBanner.createMany({
+    data: [
+      {
+        title: "Find Trusted Professionals Near You",
+        subtitle: "Verified experts for every local service",
+        linkUrl: "/search",
+        isActive: true,
+        sortOrder: 0,
+      },
+      {
+        title: "Join as a Professional",
+        subtitle: "Grow your business with KaamSetu",
+        linkUrl: "/pro/register",
+        isActive: true,
+        sortOrder: 1,
+      },
+    ],
+  });
+
+  console.log("Seed completed:");
+  console.log("- Admin:", admin.email, "/ admin123");
+  console.log("- Customer:", customer.email, "/ customer123");
+  console.log("- Professional:", proUser.email, "/ pro123");
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

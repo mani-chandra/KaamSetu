@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kaamsetu-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kaamsetu
+    ports:
+      - "5432:5432"
+    volumes:
+      - kaamsetu_pgdata:/var/lib/postgresql/data
+
+volumes:
+  kaamsetu_pgdata:
