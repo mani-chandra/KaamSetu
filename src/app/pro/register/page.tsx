@@ -28,6 +28,9 @@ export default function ProRegisterPage() {
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
   const [areaOptions, setAreaOptions] = useState<string[]>([]);
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
+  const [documentUrls, setDocumentUrls] = useState<string[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -83,6 +86,28 @@ export default function ProRegisterPage() {
     }));
   }
 
+  async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingDoc(true);
+    setError("");
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch("/api/pro/register/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    setUploadingDoc(false);
+
+    if (!res.ok) {
+      setError(data.error || "Upload failed");
+      return;
+    }
+
+    setDocumentUrls((prev) => [...prev, data.url]);
+    e.target.value = "";
+  }
+
   async function handleSubmit() {
     setLoading(true);
     setError("");
@@ -92,6 +117,7 @@ export default function ProRegisterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        documentUrls,
         certifications: form.certifications.split(",").map((s) => s.trim()).filter(Boolean),
       }),
     });
@@ -113,7 +139,7 @@ export default function ProRegisterPage() {
         <CardHeader>
           <CardTitle>Join KaamSetu as a Professional</CardTitle>
           <CardDescription>
-            Step {step} of 3 — Build your digital business card and reach more customers
+            Step {step} of 4 — Build your digital business card and reach more customers
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -226,15 +252,66 @@ export default function ProRegisterPage() {
                 <Input value={form.certifications} onChange={(e) => update("certifications", e.target.value)} />
               </div>
 
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                <Button
+                  onClick={() => setStep(4)}
+                  className="flex-1"
+                  disabled={form.skills.length === 0 || form.serviceAreas.length === 0}
+                >
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Verification documents</Label>
+                <p className="text-xs text-muted-foreground">
+                  Upload ID proof, trade license, or certification (JPG, PNG, or PDF, max 5MB each). At least one document is required.
+                </p>
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={uploadDocument}
+                  disabled={uploadingDoc}
+                />
+                {uploadingDoc && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                {documentUrls.length > 0 && (
+                  <ul className="text-sm space-y-1">
+                    {documentUrls.map((url) => (
+                      <li key={url} className="text-brand truncate">{url}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1"
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link href="/terms" className="text-brand hover:underline" target="_blank">Terms of Service</Link>
+                  {" "}and{" "}
+                  <Link href="/privacy" className="text-brand hover:underline" target="_blank">Privacy Policy</Link>.
+                </span>
+              </label>
+
               <p className="text-sm text-muted-foreground">
                 Your profile will be reviewed by our admin team before going live.
               </p>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={loading || form.skills.length === 0 || form.serviceAreas.length === 0}
+                  disabled={loading || !acceptedTerms || documentUrls.length === 0}
                   className="flex-1"
                 >
                   {loading ? "Submitting..." : "Submit for Review"}

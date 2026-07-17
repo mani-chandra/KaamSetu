@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBookingEvent } from "@/lib/notifications";
+import { isBookingWithinAvailability } from "@/lib/availability";
 
 const schema = z.object({
   professionalId: z.string(),
@@ -48,6 +49,19 @@ export async function POST(req: Request) {
 
     if (!service || service.professional.status !== "APPROVED") {
       return NextResponse.json({ error: "Professional not available" }, { status: 400 });
+    }
+
+    const availability = await prisma.availability.findMany({
+      where: { professionalId: data.professionalId },
+    });
+
+    const slotCheck = isBookingWithinAvailability(
+      data.scheduledDate,
+      data.scheduledTime,
+      availability
+    );
+    if (!slotCheck.valid) {
+      return NextResponse.json({ error: slotCheck.message }, { status: 400 });
     }
 
     const amount = data.type === "INSTANT" ? service.price : null;

@@ -16,10 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatAvailabilitySummary, isBookingWithinAvailability } from "@/lib/availability";
+
+type AvailabilitySlot = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+};
 
 type ProData = {
   id: string;
   user: { name: string | null };
+  availability?: AvailabilitySlot[];
   services: {
     id: string;
     categoryId: string;
@@ -73,6 +82,20 @@ export function BookForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+
+    if (pro?.availability?.length) {
+      const slotCheck = isBookingWithinAvailability(
+        form.scheduledDate,
+        form.scheduledTime,
+        pro.availability
+      );
+      if (!slotCheck.valid) {
+        setError(slotCheck.message || "Selected time is not available");
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
 
@@ -180,6 +203,7 @@ export function BookForm() {
                 <Input
                   type="date"
                   value={form.scheduledDate}
+                  min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setForm((f) => ({ ...f, scheduledDate: e.target.value }))}
                   required
                 />
@@ -194,6 +218,13 @@ export function BookForm() {
                 />
               </div>
             </div>
+
+            {pro.availability && pro.availability.length > 0 && (
+              <p className="text-xs text-muted-foreground rounded-md bg-slate-50 p-3">
+                <span className="font-medium">Professional availability: </span>
+                {formatAvailabilitySummary(pro.availability)}
+              </p>
+            )}
 
             <div className="space-y-2">
               <Label>Address</Label>

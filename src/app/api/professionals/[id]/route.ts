@@ -9,6 +9,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     include: {
       user: { select: { name: true, image: true, city: true } },
       services: { include: { category: true } },
+      availability: {
+        where: { isAvailable: true },
+        orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+      },
     },
   });
 

@@ -18,7 +18,7 @@ const schema = z.object({
   certifications: z.array(z.string()).default([]),
   serviceAreas: z.array(z.string()).default([]),
   categoryIds: z.array(z.string()).default([]),
-  documentUrls: z.array(z.string()).default([]),
+  documentUrls: z.array(z.string()).min(1, "At least one verification document is required"),
 });
 
 export async function POST(req: Request) {

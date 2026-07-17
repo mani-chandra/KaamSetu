@@ -37,42 +37,29 @@ Open [http://localhost:3000](http://localhost:3000).
 | Customer | customer@demo.com | customer123 |
 | Professional | pro@demo.com | pro123 |
 
+## Production Deploy (Vercel + PostgreSQL)
+
+See **[DEPLOY.md](./DEPLOY.md)** for the full step-by-step guide.
+
+Quick summary:
+
+1. Create PostgreSQL (Neon/Supabase/Docker)
+2. Set `provider = "postgresql"` in `prisma/schema.prisma`
+3. Run `npm run db:push && npm run db:seed`
+4. Deploy to Vercel with env vars (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, etc.)
+5. Merge PR to `main`
+
 ## Launch-Ready MVP Features
 
 - **Pro profile editing** — bio, photo, skills, pricing, availability, portfolio
+- **Pro registration** — document upload for verification, terms acceptance
+- **Booking availability check** — bookings validated against pro working hours
+- **Terms & Privacy** — `/terms` and `/privacy` pages
 - **Quote accept/decline** — customers confirm quotes from dashboard
 - **Razorpay checkout** — real payment modal with signature verification (demo mode without keys)
 - **Email notifications** — booking events via Resend (console log in dev without key)
-- **Admin CMS** — create/manage categories and promotional banners
-- **File uploads** — profile photos and portfolio images (`/public/uploads`)
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | `file:./dev.db` locally, PostgreSQL URL in production |
-| `AUTH_SECRET` | Yes | Random secret for NextAuth sessions |
-| `AUTH_URL` | Yes | App URL (e.g. `http://localhost:3000`) |
-| `RAZORPAY_KEY_ID` | For payments | Razorpay dashboard |
-| `RAZORPAY_KEY_SECRET` | For payments | Razorpay dashboard |
-| `RESEND_API_KEY` | For emails | [resend.com](https://resend.com) |
-| `EMAIL_FROM` | For emails | Verified sender address |
-
-## Production Deploy (Vercel + PostgreSQL)
-
-1. Push repo to GitHub
-2. Create a PostgreSQL database ([Neon](https://neon.tech) or [Supabase](https://supabase.com))
-3. In `prisma/schema.prisma`, set `provider = "postgresql"`
-4. Deploy to [Vercel](https://vercel.com) and set all env variables
-5. Run migrations: `npx prisma db push` (or add a build script)
-6. Seed production once: `npm run db:seed`
-
-Or use Docker locally for Postgres:
-
-```bash
-docker compose up -d
-# Set DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kaamsetu
-```
+- **Admin CMS** — categories, banners, and pro option lists (skills, areas, languages)
+- **File uploads** — profile photos, portfolio, and registration documents
 
 ## Scripts
 
