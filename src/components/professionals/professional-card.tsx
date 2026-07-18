@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card3D } from "@/components/3d/card-3d";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, ShieldCheck, MapPin, Clock } from "lucide-react";
@@ -37,9 +37,8 @@ export function ProfessionalCard({
     : "Get quote";
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardContent className="p-0">
-        <div className="p-4">
+    <Card3D className="overflow-hidden">
+      <div className="p-4">
           <div className="flex gap-4">
             <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted shrink-0">
               {professional.user.image ? (
@@ -104,8 +103,7 @@ export function ProfessionalCard({
               </Button>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </Card3D>
   );
 }

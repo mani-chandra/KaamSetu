@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { SearchForm } from "@/components/search/search-form";
 import { SearchFilters } from "@/components/search/search-filters";
+import { SearchResultsHeader, SearchEmptyState } from "@/components/search/search-results";
 import { ProfessionalCard } from "@/components/professionals/professional-card";
+import { ImmersiveBackground } from "@/components/3d/immersive-background";
 import { Prisma } from "@prisma/client";
+import { getCategoryGroups } from "@/lib/categories";
 
 type SearchParams = {
   q?: string;
@@ -54,7 +57,7 @@ export default async function SearchPage({
       ? { completedJobs: "desc" }
       : { avgRating: "desc" };
 
-  const [professionals, categories, cities] = await Promise.all([
+  const [professionals, groups, cities] = await Promise.all([
     prisma.professionalProfile.findMany({
       where,
       orderBy,
@@ -64,30 +67,35 @@ export default async function SearchPage({
         services: { include: { category: true } },
       },
     }),
-    prisma.serviceCategory.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    getCategoryGroups(),
     prisma.city.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
 
+  const filterGroups = groups.map((g) => ({
+    name: g.name,
+    categories: g.categories.map((c) => ({ slug: c.slug, name: c.name })),
+  }));
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="page-immersive relative min-h-screen">
+      <ImmersiveBackground />
+      <div className="container mx-auto px-4 py-8 relative z-10">
       <div className="mb-8">
         <SearchForm defaultQuery={params.q} defaultCity={params.city} />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         <aside className="lg:w-64 shrink-0">
-          <SearchFilters categories={categories} cities={cities} currentParams={params} />
+          <SearchFilters groups={filterGroups} cities={cities} currentParams={params} />
         </aside>
 
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-semibold">
-              {professionals.length} professional{professionals.length !== 1 ? "s" : ""} found
-            </h1>
+            <SearchResultsHeader count={professionals.length} />
           </div>
 
           {professionals.length === 0 ? (
-            <p className="text-muted-foreground">No professionals match your search. Try adjusting filters.</p>
+            <SearchEmptyState />
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
               {professionals.map((pro) => (
@@ -96,6 +104,7 @@ export default async function SearchPage({
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -44,15 +44,30 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         brand: {
-          DEFAULT: "#0F766E",
-          light: "#14B8A6",
-          dark: "#0D5C56",
+          DEFAULT: "#14B8A6",
+          light: "#5EEAD4",
+          dark: "#0F766E",
+          glow: "hsl(var(--glow))",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      animation: {
+        float: "float3d 6s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+      },
+      keyframes: {
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 20px hsl(173 80% 40% / 0.2)" },
+          "50%": { boxShadow: "0 0 40px hsl(173 80% 40% / 0.4)" },
+        },
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
     },
   },

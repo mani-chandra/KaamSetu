@@ -16,14 +16,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OptionPicker } from "@/components/pro/option-picker";
+import { GroupedCategoryPicker } from "@/components/pro/grouped-category-picker";
+import { useI18n } from "@/lib/i18n/context";
+import { ImmersiveBackground } from "@/components/3d/immersive-background";
 
-type Category = { id: string; name: string; slug: string };
+type Category = { id: string; name: string; slug: string; icon?: string | null };
+type CategoryGroup = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  categories: Category[];
+};
 type CityOption = { id: string; name: string };
 
 export default function ProRegisterPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [step, setStep] = useState(1);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [cities, setCities] = useState<CityOption[]>([]);
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
   const [areaOptions, setAreaOptions] = useState<string[]>([]);
@@ -51,7 +62,7 @@ export default function ProRegisterPage() {
   useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
-      .then((data) => setCategories(data.categories || []));
+      .then((data) => setGroups(data.groups || []));
     fetch("/api/cities")
       .then((r) => r.json())
       .then((data) => setCities(data.cities || []));
@@ -59,7 +70,8 @@ export default function ProRegisterPage() {
 
   useEffect(() => {
     if (!form.city && step < 2) return;
-    const slugs = categories
+    const allCategories = groups.flatMap((g) => g.categories);
+    const slugs = allCategories
       .filter((c) => form.categoryIds.includes(c.id))
       .map((c) => c.slug)
       .join(",");
@@ -71,19 +83,10 @@ export default function ProRegisterPage() {
         setAreaOptions(data.serviceAreas || []);
         setLanguageOptions(data.languages || []);
       });
-  }, [form.city, form.categoryIds, categories, step]);
+  }, [form.city, form.categoryIds, groups, step]);
 
   function update(field: string, value: string | number | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  function toggleCategory(id: string) {
-    setForm((prev) => ({
-      ...prev,
-      categoryIds: prev.categoryIds.includes(id)
-        ? prev.categoryIds.filter((c) => c !== id)
-        : [...prev.categoryIds, id],
-    }));
   }
 
   async function uploadDocument(e: React.ChangeEvent<HTMLInputElement>) {
@@ -134,39 +137,41 @@ export default function ProRegisterPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-2xl">
-      <Card>
+    <div className="page-immersive relative min-h-[calc(100vh-4rem)]">
+      <ImmersiveBackground className="opacity-70" />
+      <div className="container mx-auto px-4 py-12 max-w-2xl relative z-10">
+      <Card className="glass-panel border-white/10">
         <CardHeader>
-          <CardTitle>Join KaamSetu as a Professional</CardTitle>
+          <CardTitle>{t.proRegister.title}</CardTitle>
           <CardDescription>
-            Step {step} of 4 — Build your digital business card and reach more customers
+            {t.proRegister.stepOf} {step} {t.proRegister.of} 4 — {t.proRegister.stepDesc}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {step === 1 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Full name</Label>
+                <Label>{t.auth.fullName}</Label>
                 <Input value={form.name} onChange={(e) => update("name", e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label>{t.auth.email}</Label>
                 <Input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Password</Label>
+                <Label>{t.auth.password}</Label>
                 <Input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Phone</Label>
+                  <Label>{t.auth.phone}</Label>
                   <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>City</Label>
+                  <Label>{t.auth.city}</Label>
                   <Select value={form.city} onValueChange={(v) => update("city", v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select city" />
+                      <SelectValue placeholder={t.auth.city} />
                     </SelectTrigger>
                     <SelectContent>
                       {cities.map((city) => (
@@ -177,7 +182,7 @@ export default function ProRegisterPage() {
                 </div>
               </div>
               <Button onClick={() => setStep(2)} className="w-full" disabled={!form.city}>
-                Continue
+                {t.common.continue}
               </Button>
             </div>
           )}
@@ -185,30 +190,18 @@ export default function ProRegisterPage() {
           {step === 2 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Services you offer</Label>
-                <p className="text-xs text-muted-foreground">Select categories first — skills will update based on your selection.</p>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                  {categories.map((cat) => (
-                    <label
-                      key={cat.id}
-                      className={`flex items-center gap-2 p-2 rounded border cursor-pointer text-sm ${
-                        form.categoryIds.includes(cat.id) ? "border-brand bg-brand/5" : ""
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.categoryIds.includes(cat.id)}
-                        onChange={() => toggleCategory(cat.id)}
-                      />
-                      {cat.name}
-                    </label>
-                  ))}
-                </div>
+                <Label>{t.proRegister.servicesOffer}</Label>
+                <GroupedCategoryPicker
+                  groups={groups}
+                  selectedIds={form.categoryIds}
+                  onChange={(ids) => update("categoryIds", ids)}
+                  hint={t.proRegister.servicesHint}
+                />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+                <Button variant="outline" onClick={() => setStep(1)}>{t.common.back}</Button>
                 <Button onClick={() => setStep(3)} className="flex-1" disabled={form.categoryIds.length === 0}>
-                  Continue
+                  {t.common.continue}
                 </Button>
               </div>
             </div>
@@ -217,49 +210,49 @@ export default function ProRegisterPage() {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>About you</Label>
+                <Label>{t.proRegister.aboutYou}</Label>
                 <Textarea value={form.bio} onChange={(e) => update("bio", e.target.value)} rows={4} />
               </div>
               <div className="space-y-2">
-                <Label>Years of experience</Label>
+                <Label>{t.proRegister.experienceYears}</Label>
                 <Input type="number" min={0} value={form.experienceYears} onChange={(e) => update("experienceYears", Number(e.target.value))} />
               </div>
 
               <OptionPicker
-                label="Skills"
+                label={t.proRegister.skills}
                 options={skillOptions}
                 selected={form.skills}
                 onChange={(skills) => update("skills", skills)}
               />
 
               <OptionPicker
-                label="Service areas you cover"
+                label={t.proRegister.serviceAreas}
                 options={areaOptions}
                 selected={form.serviceAreas}
                 onChange={(serviceAreas) => update("serviceAreas", serviceAreas)}
-                emptyMessage={`Select areas in ${form.city}.`}
+                emptyMessage={`${t.proRegister.serviceAreasEmpty} ${form.city}.`}
               />
 
               <OptionPicker
-                label="Languages"
+                label={t.proRegister.languages}
                 options={languageOptions}
                 selected={form.languages}
                 onChange={(languages) => update("languages", languages)}
               />
 
               <div className="space-y-2">
-                <Label>Certifications (comma separated)</Label>
+                <Label>{t.proRegister.certifications}</Label>
                 <Input value={form.certifications} onChange={(e) => update("certifications", e.target.value)} />
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                <Button variant="outline" onClick={() => setStep(2)}>{t.common.back}</Button>
                 <Button
                   onClick={() => setStep(4)}
                   className="flex-1"
                   disabled={form.skills.length === 0 || form.serviceAreas.length === 0}
                 >
-                  Continue
+                  {t.common.continue}
                 </Button>
               </div>
             </div>
@@ -268,17 +261,15 @@ export default function ProRegisterPage() {
           {step === 4 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Verification documents</Label>
-                <p className="text-xs text-muted-foreground">
-                  Upload ID proof, trade license, or certification (JPG, PNG, or PDF, max 5MB each). At least one document is required.
-                </p>
+                <Label>{t.proRegister.verificationDocs}</Label>
+                <p className="text-xs text-muted-foreground">{t.proRegister.docsHint}</p>
                 <Input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
                   onChange={uploadDocument}
                   disabled={uploadingDoc}
                 />
-                {uploadingDoc && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                {uploadingDoc && <p className="text-xs text-muted-foreground">{t.proRegister.uploading}</p>}
                 {documentUrls.length > 0 && (
                   <ul className="text-sm space-y-1">
                     {documentUrls.map((url) => (
@@ -296,35 +287,35 @@ export default function ProRegisterPage() {
                   className="mt-1"
                 />
                 <span>
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-brand hover:underline" target="_blank">Terms of Service</Link>
-                  {" "}and{" "}
-                  <Link href="/privacy" className="text-brand hover:underline" target="_blank">Privacy Policy</Link>.
+                  {t.proRegister.termsAgree}{" "}
+                  <Link href="/terms" className="text-brand hover:underline" target="_blank">{t.footer.terms}</Link>
+                  {" "}{t.proRegister.and}{" "}
+                  <Link href="/privacy" className="text-brand hover:underline" target="_blank">{t.footer.privacy}</Link>.
                 </span>
               </label>
 
-              <p className="text-sm text-muted-foreground">
-                Your profile will be reviewed by our admin team before going live.
-              </p>
+              <p className="text-sm text-muted-foreground">{t.proRegister.reviewNote}</p>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
+                <Button variant="outline" onClick={() => setStep(3)}>{t.common.back}</Button>
                 <Button
                   onClick={handleSubmit}
                   disabled={loading || !acceptedTerms || documentUrls.length === 0}
                   className="flex-1"
                 >
-                  {loading ? "Submitting..." : "Submit for Review"}
+                  {loading ? t.proRegister.submitting : t.proRegister.submitReview}
                 </Button>
               </div>
             </div>
           )}
 
           <p className="text-sm text-muted-foreground text-center">
-            Already registered? <Link href="/auth/login" className="text-brand hover:underline">Sign in</Link>
+            {t.proRegister.alreadyRegistered}{" "}
+            <Link href="/auth/login" className="text-brand hover:underline">{t.proRegister.signIn}</Link>
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

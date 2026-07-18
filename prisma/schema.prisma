@@ -210,16 +210,35 @@ model ServiceCategory {
   description String?
   icon        String?
   imageUrl    String?
+  metadata    Json?
+  groupId     String?
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  group                CategoryGroup?       @relation(fields: [groupId], references: [id])
   servicePage          ServicePage?
   professionalServices ProfessionalService[]
   favoriteServices     FavoriteService[]
   bookings             Booking[]
   predefinedSkills     PredefinedSkill[]
+
+  @@index([groupId])
+}
+
+model CategoryGroup {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories ServiceCategory[]
 }
 
 model ServicePage {
@@ -296,6 +315,7 @@ model Booking {
   city               String?
   amount             Float?
   cancellationReason String?
+  metadata           Json?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -307,6 +327,7 @@ model Booking {
   payment       Payment?
   review        Review?
   dispute       Dispute?
+  photos        BookingPhoto[]
 
   @@index([customerId])
   @@index([professionalId])
@@ -383,6 +404,14 @@ model ReviewPhoto {
   imageUrl String
 
   review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model BookingPhoto {
+  id        String @id @default(cuid())
+  bookingId String
+  imageUrl  String
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
 model ReviewReply {

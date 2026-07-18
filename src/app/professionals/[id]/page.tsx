@@ -160,6 +160,21 @@ export default async function ProfessionalProfilePage({
             </CardContent>
           </Card>
 
+          {professional.portfolio.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Portfolio</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  {professional.portfolio.map((item) => (
+                    <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden">
+                      <Image src={item.imageUrl} alt={item.title || "Work sample"} fill className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {professional.reviews.length > 0 && (
             <Card>
               <CardHeader><CardTitle>Customer Reviews</CardTitle></CardHeader>
@@ -178,6 +193,15 @@ export default async function ProfessionalProfilePage({
                       <span className="text-sm font-medium">{review.customer.user.name}</span>
                     </div>
                     {review.comment && <p className="text-sm text-muted-foreground">{review.comment}</p>}
+                    {review.photos.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {review.photos.map((photo) => (
+                          <div key={photo.id} className="relative h-16 w-16 rounded overflow-hidden">
+                            <Image src={photo.imageUrl} alt="Review" fill className="object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {review.reply && (
                       <p className="text-sm mt-2 pl-4 border-l-2 text-muted-foreground">
                         <span className="font-medium">Response:</span> {review.reply.comment}

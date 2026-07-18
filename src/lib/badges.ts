@@ -26,7 +26,7 @@ export async function evaluateBadges(professionalId: string) {
   if (pro.completedJobs >= 50) {
     badges.push({
       type: BadgeType.EXPERIENCED,
-      label: "Experienced Pro",
+      label: "Experienced Professional",
       description: "50+ completed jobs",
     });
   }

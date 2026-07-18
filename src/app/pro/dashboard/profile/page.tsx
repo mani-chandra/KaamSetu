@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ProDashboardNav } from "@/components/layout/dashboard-nav";
+import { ProProfilePageHeader } from "@/components/dashboard/pro-profile-page-header";
 import { ProProfileEditor } from "@/components/pro/profile-editor";
 
 export default async function ProProfilePage() {
@@ -21,7 +22,7 @@ export default async function ProProfilePage() {
       <div className="grid lg:grid-cols-4 gap-8">
         <ProDashboardNav />
         <div className="lg:col-span-3 space-y-6">
-          <h1 className="text-2xl font-bold">Edit Profile</h1>
+          <ProProfilePageHeader />
           <ProProfileEditor profile={pro} />
         </div>
       </div>

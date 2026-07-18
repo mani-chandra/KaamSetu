@@ -4,27 +4,20 @@ import {
   DEFAULT_COMMON_SKILLS,
   DEFAULT_LANGUAGES,
   DEFAULT_SERVICE_AREAS_BY_CITY,
-  DEFAULT_SKILLS_BY_CATEGORY,
 } from "../src/lib/pro-options-defaults";
+import { CATEGORY_CATALOG } from "../src/lib/category-catalog";
+import { getServiceIcon } from "../src/lib/service-icons";
 
 const prisma = new PrismaClient();
 
-const categories = [
-  { name: "Plumber", slug: "plumber", icon: "🔧", description: "Pipe repairs, leak fixes, bathroom fittings, and water system maintenance." },
-  { name: "Electrician", slug: "electrician", icon: "⚡", description: "Wiring, switchboard repairs, appliance installation, and electrical safety checks." },
-  { name: "Carpenter", slug: "carpenter", icon: "🪚", description: "Furniture repair, custom woodwork, door/window fitting, and modular solutions." },
-  { name: "AC Technician", slug: "ac-technician", icon: "❄️", description: "AC installation, servicing, gas refill, and cooling system repairs." },
-  { name: "Cleaner", slug: "cleaner", icon: "🧹", description: "Home deep cleaning, office cleaning, move-in/move-out cleaning services." },
-  { name: "Tutor", slug: "tutor", icon: "📚", description: "Personal tutoring for school subjects, competitive exams, and skill development." },
-  { name: "Home Chef", slug: "home-chef", icon: "👨‍🍳", description: "Personal chefs for daily meals, parties, and special dietary requirements." },
-  { name: "Driver", slug: "driver", icon: "🚗", description: "Personal drivers, outstation trips, and chauffeur services." },
-  { name: "Childcare", slug: "childcare", icon: "👶", description: "Babysitting, nanny services, and child care for working parents." },
-  { name: "Photographer", slug: "photographer", icon: "📷", description: "Event photography, portraits, product shoots, and wedding coverage." },
-  { name: "Makeup Artist", slug: "makeup-artist", icon: "💄", description: "Bridal makeup, party looks, and professional beauty services." },
-  { name: "Fitness Trainer", slug: "fitness-trainer", icon: "💪", description: "Personal training, yoga, and fitness coaching at home or gym." },
-  { name: "Elder Care", slug: "elder-care", icon: "🤝", description: "Compassionate care for seniors including companionship and daily assistance." },
-  { name: "Delivery Personnel", slug: "delivery", icon: "📦", description: "Local delivery, courier, and pickup services." },
-];
+function defaultSkillsForCategory(categoryName: string): string[] {
+  return [
+    "On-site service",
+    "Consultation",
+    "Emergency availability",
+    "Quality guarantee",
+  ].filter((s) => s !== categoryName);
+}
 
 const cities = [
   { name: "Mumbai", slug: "mumbai", state: "Maharashtra" },
@@ -79,27 +72,60 @@ async function main() {
     });
   }
 
-  for (const [index, cat] of categories.entries()) {
-    await prisma.serviceCategory.upsert({
-      where: { slug: cat.slug },
-      update: { ...cat, sortOrder: index },
+  for (const [groupIndex, group] of CATEGORY_CATALOG.entries()) {
+    const dbGroup = await prisma.categoryGroup.upsert({
+      where: { slug: group.slug },
+      update: {
+        name: group.name,
+        icon: group.icon,
+        description: group.description,
+        sortOrder: groupIndex,
+        isActive: true,
+      },
       create: {
-        ...cat,
-        sortOrder: index,
-        servicePage: {
-          create: {
-            headline: `Professional ${cat.name} Services`,
-            content: cat.description,
-            whatsIncluded: ["Verified professionals", "Transparent pricing", "Customer reviews", "Booking support"],
-            pricingGuidance: "Prices vary based on scope. Instant booking available for standard services.",
-            faq: [
-              { q: `How do I book a ${cat.name.toLowerCase()}?`, a: "Search, compare profiles, and book instantly or request a quote." },
-              { q: "Are professionals verified?", a: "Yes, all professionals are verified by our admin team before going live." },
-            ],
-          },
-        },
+        name: group.name,
+        slug: group.slug,
+        icon: group.icon,
+        description: group.description,
+        sortOrder: groupIndex,
       },
     });
+
+    for (const [catIndex, category] of group.categories.entries()) {
+      await prisma.serviceCategory.upsert({
+        where: { slug: category.slug },
+        update: {
+          name: category.name,
+          description: category.description,
+          icon: getServiceIcon(category.slug),
+          groupId: dbGroup.id,
+          sortOrder: groupIndex * 1000 + catIndex,
+          metadata: category.metadata ?? undefined,
+          isActive: true,
+        },
+        create: {
+          name: category.name,
+          slug: category.slug,
+          description: category.description,
+          icon: group.icon,
+          groupId: dbGroup.id,
+          sortOrder: groupIndex * 1000 + catIndex,
+          metadata: category.metadata ?? undefined,
+          servicePage: {
+            create: {
+              headline: `Professional ${category.name} Services`,
+              content: category.description ?? `Book verified ${category.name.toLowerCase()} professionals near you.`,
+              whatsIncluded: ["Verified professionals", "Transparent pricing", "Customer reviews", "Booking support"],
+              pricingGuidance: "Prices vary based on scope. Instant booking available for standard services.",
+              faq: [
+                { q: `How do I book a ${category.name.toLowerCase()}?`, a: "Search, compare profiles, and book instantly or request a quote." },
+                { q: "Are professionals verified?", a: "Yes, all professionals are verified by our admin team before going live." },
+              ],
+            },
+          },
+        },
+      });
+    }
   }
 
   const allCategories = await prisma.serviceCategory.findMany();
@@ -110,8 +136,8 @@ async function main() {
       create: { categoryId: category.id, name: category.name, sortOrder: 0 },
     });
 
-    const slugSkills = DEFAULT_SKILLS_BY_CATEGORY[category.slug] ?? [];
-    for (const [i, skillName] of slugSkills.entries()) {
+    const extraSkills = defaultSkillsForCategory(category.name);
+    for (const [i, skillName] of extraSkills.entries()) {
       if (skillName === category.name) continue;
       await prisma.predefinedSkill.upsert({
         where: { categoryId_name: { categoryId: category.id, name: skillName } },
@@ -212,7 +238,7 @@ async function main() {
             create: [
               { type: BadgeType.VERIFIED, label: "Verified Professional", description: "Identity and credentials verified" },
               { type: BadgeType.TOP_RATED, label: "Top Rated", description: "Consistently rated 4.5+ stars" },
-              { type: BadgeType.EXPERIENCED, label: "Experienced Pro", description: "100+ completed jobs" },
+              { type: BadgeType.EXPERIENCED, label: "Experienced Professional", description: "100+ completed jobs" },
             ],
           },
         },
@@ -296,7 +322,7 @@ async function main() {
       features: ["Priority booking", "10% discount", "Service warranty", "Exclusive offers"],
     },
     {
-      name: "Pro Premium",
+      name: "Professional Premium",
       slug: "pro-premium",
       target: MembershipTarget.PROFESSIONAL,
       description: "Boosted visibility, analytics, and premium profile placement",

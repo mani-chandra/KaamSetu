@@ -46,7 +46,7 @@ export default async function MembershipsPage() {
                   </li>
                 ))}
               </ul>
-              <MembershipSubscribeButton planId={plan.id} />
+              <MembershipSubscribeButton planId={plan.id} price={plan.price} />
             </CardContent>
           </Card>
         );})}
@@ -69,7 +69,7 @@ export default async function MembershipsPage() {
                   </li>
                 ))}
               </ul>
-              <MembershipSubscribeButton planId={plan.id} />
+              <MembershipSubscribeButton planId={plan.id} price={plan.price} />
             </CardContent>
           </Card>
         );})}

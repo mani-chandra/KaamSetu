@@ -6,6 +6,7 @@ import { BookingActions } from "@/components/booking/booking-actions";
 import { QuoteForm } from "@/components/booking/quote-form";
 import { BookingStatusBadge } from "@/components/booking/status-badge";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import Image from "next/image";
 
 export default async function ProBookingsPage() {
   const session = await requireAuth(["PROFESSIONAL"]);
@@ -20,6 +21,7 @@ export default async function ProBookingsPage() {
       customer: { include: { user: true } },
       category: true,
       quote: true,
+      photos: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -42,6 +44,21 @@ export default async function ProBookingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {booking.description && <p className="text-sm">{booking.description}</p>}
+                  {booking.photos.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {booking.photos.map((photo) => (
+                        <a
+                          key={photo.id}
+                          href={photo.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative h-16 w-16 rounded-lg overflow-hidden border border-white/10"
+                        >
+                          <Image src={photo.imageUrl} alt="" fill className="object-cover" unoptimized />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   {booking.scheduledDate && (
                     <p className="text-sm text-muted-foreground">
                       {formatDate(booking.scheduledDate)} at {booking.scheduledTime} · {booking.address}, {booking.city}

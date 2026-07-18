@@ -173,7 +173,7 @@ export function AdminProOptionsManager({
     <div className="space-y-4">
       {message && <p className="text-sm text-brand">{message}</p>}
       <p className="text-sm text-muted-foreground">
-        Manage the predefined lists pros pick from. Each service category name is always included as a skill automatically.
+        Manage the predefined lists professionals pick from. Each service category name is always included as a skill automatically.
       </p>
 
       <Tabs defaultValue="skills">

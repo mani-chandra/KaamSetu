@@ -10,6 +10,7 @@ const schema = z.object({
   professionalId: z.string(),
   rating: z.number().int().min(1).max(5),
   comment: z.string().optional(),
+  photoUrls: z.array(z.string()).max(5).default([]),
 });
 
 export async function POST(req: Request) {
@@ -52,7 +53,11 @@ export async function POST(req: Request) {
         professionalId: data.professionalId,
         rating: data.rating,
         comment: data.comment,
+        photos: data.photoUrls.length
+          ? { create: data.photoUrls.map((imageUrl) => ({ imageUrl })) }
+          : undefined,
       },
+      include: { photos: true },
     });
 
     await updateProfessionalStats(data.professionalId);

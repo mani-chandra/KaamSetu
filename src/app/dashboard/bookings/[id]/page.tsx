@@ -8,8 +8,10 @@ import { BookingTimeline } from "@/components/booking/timeline";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { PaymentButton } from "@/components/payments/payment-button";
 import { QuoteAcceptActions } from "@/components/booking/quote-accept-actions";
+import { CustomerBookingActions } from "@/components/booking/customer-booking-actions";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
+import Image from "next/image";
 
 export default async function BookingDetailPage({
   params,
@@ -32,6 +34,8 @@ export default async function BookingDetailPage({
       payment: true,
       review: true,
       quote: true,
+      dispute: true,
+      photos: true,
     },
   });
 
@@ -62,6 +66,24 @@ export default async function BookingDetailPage({
               )}
               <p><span className="font-medium">Address:</span> {booking.address}, {booking.city}</p>
               {booking.description && <p><span className="font-medium">Description:</span> {booking.description}</p>}
+              {booking.photos.length > 0 && (
+                <div>
+                  <p className="font-medium mb-2">Issue photos:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {booking.photos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={photo.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative h-20 w-20 rounded-lg overflow-hidden border border-white/10"
+                      >
+                        <Image src={photo.imageUrl} alt="" fill className="object-cover" unoptimized />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               {booking.amount && <p><span className="font-medium">Amount:</span> {formatCurrency(booking.amount)}</p>}
               {booking.quote && booking.quote.status === "SENT" && (
                 <p><span className="font-medium">Quote:</span> {formatCurrency(booking.quote.amount)}</p>
@@ -92,6 +114,12 @@ export default async function BookingDetailPage({
               </CardContent>
             </Card>
           )}
+
+          <CustomerBookingActions
+            bookingId={booking.id}
+            status={booking.status}
+            hasDispute={!!booking.dispute}
+          />
         </div>
       </div>
     </div>

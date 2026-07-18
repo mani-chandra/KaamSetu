@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { saveUploadedFile } from "@/lib/storage";
 
 const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -27,15 +26,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 });
   }
 
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  const ext = file.name.split(".").pop() || "jpg";
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", session.user.id);
+  const result = await saveUploadedFile(file, session.user.id);
+  if (result.error) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
 
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), buffer);
-
-  const url = `/uploads/${session.user.id}/${filename}`;
-  return NextResponse.json({ url });
+  return NextResponse.json({ url: result.url });
 }

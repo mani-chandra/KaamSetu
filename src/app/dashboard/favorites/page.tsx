@@ -46,6 +46,21 @@ export default async function FavoritesPage() {
               </div>
             )}
           </div>
+
+          <div>
+            <h2 className="text-xl font-bold mb-4">Favorite Services</h2>
+            {customer?.favoriteServices.length === 0 ? (
+              <p className="text-muted-foreground">No favorite service categories yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {customer?.favoriteServices.map(({ category }) => (
+                  <Button key={category.id} variant="outline" size="sm" asChild>
+                    <Link href={`/services/${category.slug}`}>{category.icon} {category.name}</Link>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

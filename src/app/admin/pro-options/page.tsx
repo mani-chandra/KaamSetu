@@ -35,7 +35,7 @@ export default async function AdminProOptionsPage() {
       <div className="grid lg:grid-cols-4 gap-8">
         <AdminNav />
         <div className="lg:col-span-3">
-          <h1 className="text-2xl font-bold mb-2">Pro Options</h1>
+          <h1 className="text-2xl font-bold mb-2">Professional Options</h1>
           <p className="text-muted-foreground mb-6">
             Skills, service areas, and languages that professionals can select on their profile.
           </p>

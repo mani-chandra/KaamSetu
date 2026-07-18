@@ -1,52 +1,39 @@
 import Link from "next/link";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { getDashboardPath } from "@/lib/session";
-import { Button } from "@/components/ui/button";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
+import { SiteControls } from "@/components/layout/site-controls";
+import { HeaderNav, HeaderAuthButtons } from "@/components/layout/header-nav";
+import { SignOutButton } from "@/components/layout/sign-out-button";
 
 export async function Header() {
   const session = await auth();
+  const dashboardPath = session?.user ? getDashboardPath(session.user.role) : "/dashboard";
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-bold text-brand text-xl">
-          <ShieldCheck className="h-6 w-6" />
-          KaamSetu
+    <header className="sticky top-0 z-50 glass-panel border-b border-white/10 rounded-none">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 gap-2">
+        <Link href="/" className="flex items-center gap-2 font-bold text-brand text-xl group shrink-0">
+          <div className="relative">
+            <ShieldCheck className="h-6 w-6 group-hover:scale-110 transition-transform" />
+            <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-brand-light animate-pulse" />
+          </div>
+          <span className="bg-gradient-to-r from-brand-light to-brand bg-clip-text text-transparent hidden sm:inline">
+            KaamSetu
+          </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <Link href="/search" className="hover:text-foreground">Find Services</Link>
-          <Link href="/services" className="hover:text-foreground">Categories</Link>
-          <Link href="/pro/register" className="hover:text-foreground">Become a Professional</Link>
-        </nav>
+        <HeaderNav />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <SiteControls />
           {session?.user ? (
             <>
-              <Button variant="ghost" asChild>
-                <Link href={getDashboardPath(session.user.role)}>Dashboard</Link>
-              </Button>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/" });
-                }}
-              >
-                <Button variant="outline" type="submit" size="sm">
-                  Sign out
-                </Button>
-              </form>
+              <HeaderAuthButtons session={session} dashboardPath={dashboardPath} />
+              <SignOutButton />
             </>
           ) : (
-            <>
-              <Button variant="ghost" asChild>
-                <Link href="/auth/login">Log in</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/auth/register">Sign up</Link>
-              </Button>
-            </>
+            <HeaderAuthButtons session={session} dashboardPath={dashboardPath} />
           )}
         </div>
       </div>

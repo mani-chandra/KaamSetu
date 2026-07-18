@@ -1,6 +1,7 @@
 import { NotificationType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendEmailToUser, emailTemplate } from "@/lib/email";
+import { sendSmsToUser, shouldSendSms } from "@/lib/sms";
 
 type CreateNotificationInput = {
   userId: string;
@@ -42,6 +43,10 @@ export async function notifyBookingEvent(
       `KaamSetu: ${title}`,
       emailTemplate(title, message, url, "Open KaamSetu")
     );
+  }
+
+  if (shouldSendSms(type)) {
+    await sendSmsToUser(userId, `${title}: ${message}`);
   }
 }
 

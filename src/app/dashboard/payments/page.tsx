@@ -46,6 +46,14 @@ export default async function PaymentsPage() {
                     <p>Invoice: {payment.invoiceNumber}</p>
                     <p>Status: {payment.status}</p>
                     {payment.paidAt && <p>Paid: {formatDate(payment.paidAt)}</p>}
+                    {payment.status === "PAID" && (
+                      <a
+                        href={`/api/invoices/${payment.id}`}
+                        className="inline-block mt-2 text-brand hover:underline text-sm font-medium"
+                      >
+                        Download PDF Invoice
+                      </a>
+                    )}
                   </CardContent>
                 </Card>
               ))}

@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
               <CardContent><div className="text-2xl font-bold">{users}</div></CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Approved Pros</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Approved Professionals</CardTitle></CardHeader>
               <CardContent><div className="text-2xl font-bold">{professionals}</div></CardContent>
             </Card>
             <Card>

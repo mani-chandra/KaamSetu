@@ -15,6 +15,8 @@ const schema = z.object({
   scheduledTime: z.string(),
   address: z.string(),
   city: z.string(),
+  photoUrls: z.array(z.string().url()).max(3).optional(),
+  metadata: z.record(z.string()).optional(),
 });
 
 export async function POST(req: Request) {
@@ -81,9 +83,17 @@ export async function POST(req: Request) {
         address: data.address,
         city: data.city,
         amount: amount ?? undefined,
+        metadata: data.metadata ?? {},
         statusHistory: {
           create: { status, note: "Booking created" },
         },
+        ...(data.photoUrls?.length
+          ? {
+              photos: {
+                create: data.photoUrls.map((imageUrl) => ({ imageUrl })),
+              },
+            }
+          : {}),
         ...(data.type === "QUOTE"
           ? {
               quote: {
