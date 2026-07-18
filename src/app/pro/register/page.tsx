@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +41,9 @@ export default function ProRegisterPage() {
   const [areaOptions, setAreaOptions] = useState<string[]>([]);
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [documentUrls, setDocumentUrls] = useState<string[]>([]);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -117,6 +120,28 @@ export default function ProRegisterPage() {
     e.target.value = "";
   }
 
+  async function uploadProfilePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    setError("");
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch("/api/pro/register/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    setUploadingPhoto(false);
+
+    if (!res.ok) {
+      setError(data.error || "Upload failed");
+      return;
+    }
+
+    setProfilePhotoUrl(data.url);
+    e.target.value = "";
+  }
+
   const selectedCategories = groups
     .flatMap((g) => g.categories)
     .filter((c) => form.categoryIds.includes(c.id));
@@ -132,6 +157,7 @@ export default function ProRegisterPage() {
         ...form,
         skills: form.specializations,
         documentUrls,
+        profilePhotoUrl,
         certifications: form.certifications.split(",").map((s) => s.trim()).filter(Boolean),
       }),
     });
@@ -287,6 +313,25 @@ export default function ProRegisterPage() {
           {step === 4 && (
             <div className="space-y-4">
               <div className="space-y-2">
+                <Label>{t.proRegister.profilePhoto}</Label>
+                <p className="text-xs text-muted-foreground">{t.proRegister.profilePhotoHint}</p>
+                <div className="flex items-center gap-4">
+                  {profilePhotoUrl && (
+                    <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-brand/30">
+                      <Image src={profilePhotoUrl} alt="Profile" fill className="object-cover" unoptimized />
+                    </div>
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={uploadProfilePhoto}
+                    disabled={uploadingPhoto}
+                  />
+                </div>
+                {uploadingPhoto && <p className="text-xs text-muted-foreground">{t.proRegister.uploading}</p>}
+              </div>
+
+              <div className="space-y-2">
                 <Label>{t.proRegister.verificationDocs}</Label>
                 <p className="text-xs text-muted-foreground">{t.proRegister.docsHint}</p>
                 <Input
@@ -326,7 +371,7 @@ export default function ProRegisterPage() {
                 <Button variant="outline" onClick={() => setStep(3)}>{t.common.back}</Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={loading || !acceptedTerms || documentUrls.length === 0}
+                  disabled={loading || !acceptedTerms || documentUrls.length === 0 || !profilePhotoUrl}
                   className="flex-1"
                 >
                   {loading ? t.proRegister.submitting : t.proRegister.submitReview}

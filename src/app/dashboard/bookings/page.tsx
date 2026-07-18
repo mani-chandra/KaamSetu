@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import { BookingStatusBadge } from "@/components/booking/status-badge";
+import { CustomerBookingStatusHint } from "@/components/booking/customer-booking-journey";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 export default async function CustomerBookingsPage() {
@@ -43,6 +44,10 @@ export default async function CustomerBookingsPage() {
                     <p className="text-sm text-muted-foreground mt-1">
                       {booking.professional?.user.name ?? "Open request"} · {booking.category.name}
                     </p>
+                    <CustomerBookingStatusHint
+                      status={booking.status}
+                      serviceStartOtp={booking.serviceStartOtp}
+                    />
                   </div>
                   <BookingStatusBadge status={booking.status} />
                 </CardHeader>

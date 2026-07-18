@@ -21,7 +21,7 @@ export default async function CustomerDashboardPage() {
 
   const activeBookings =
     customer?.bookings.filter((b) =>
-      ["REQUESTED", "QUOTED", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
+      ["REQUESTED", "QUOTED", "CONFIRMED", "EN_ROUTE", "IN_PROGRESS"].includes(b.status)
     ) ?? [];
 
   return (

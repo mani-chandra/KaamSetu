@@ -1,4 +1,7 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useI18n } from "@/lib/i18n/context";
 import { formatDate } from "@/lib/utils";
 import type { BookingStatus } from "@prisma/client";
 
@@ -10,6 +13,8 @@ type HistoryItem = {
 };
 
 export function BookingTimeline({ history }: { history: HistoryItem[] }) {
+  const { t } = useI18n();
+
   return (
     <Card>
       <CardHeader><CardTitle>Booking Timeline</CardTitle></CardHeader>
@@ -22,7 +27,7 @@ export function BookingTimeline({ history }: { history: HistoryItem[] }) {
                 {index < history.length - 1 && <div className="w-0.5 flex-1 bg-border min-h-8" />}
               </div>
               <div className="pb-4">
-                <div className="font-medium text-sm">{item.status.replace("_", " ")}</div>
+                <div className="font-medium text-sm">{t.bookingStatus[item.status]}</div>
                 {item.note && <div className="text-sm text-muted-foreground">{item.note}</div>}
                 <div className="text-xs text-muted-foreground">{formatDate(item.createdAt)}</div>
               </div>

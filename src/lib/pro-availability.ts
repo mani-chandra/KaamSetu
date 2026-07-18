@@ -6,7 +6,7 @@ import {
 } from "@/lib/availability";
 import type { Prisma } from "@prisma/client";
 
-const CONFLICT_STATUSES = ["CONFIRMED", "IN_PROGRESS", "QUOTED"] as const;
+const CONFLICT_STATUSES = ["CONFIRMED", "EN_ROUTE", "IN_PROGRESS", "QUOTED"] as const;
 
 export type AvailableProfessional = {
   id: string;

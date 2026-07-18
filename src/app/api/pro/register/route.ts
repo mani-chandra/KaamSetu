@@ -19,6 +19,7 @@ const schema = z.object({
   serviceAreas: z.array(z.string()).default([]),
   categoryIds: z.array(z.string()).default([]),
   documentUrls: z.array(z.string()).min(1, "At least one verification document is required"),
+  profilePhotoUrl: z.string().min(1, "Profile photo is required"),
 });
 
 export async function POST(req: Request) {
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
         passwordHash,
         phone: data.phone,
         city: data.city,
+        image: data.profilePhotoUrl,
         role: "PROFESSIONAL",
         professionalProfile: {
           create: {

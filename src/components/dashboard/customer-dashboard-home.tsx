@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/components/booking/status-badge";
+import { CustomerBookingStatusHint } from "@/components/booking/customer-booking-journey";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import type { BookingStatus } from "@prisma/client";
 
@@ -12,7 +13,8 @@ type BookingItem = {
   id: string;
   title: string;
   status: BookingStatus;
-  professional: { user: { name: string | null } } | null;
+  serviceStartOtp?: string | null;
+  professional: { user: { name: string | null; image?: string | null } } | null;
   category: { name: string };
 };
 
@@ -95,6 +97,10 @@ export function CustomerDashboardHome({
                         <div className="text-sm text-muted-foreground">
                           {booking.professional?.user.name ?? "Open request"} · {booking.category.name}
                         </div>
+                        <CustomerBookingStatusHint
+                          status={booking.status}
+                          serviceStartOtp={booking.serviceStartOtp}
+                        />
                       </div>
                       <BookingStatusBadge status={booking.status} />
                     </Link>

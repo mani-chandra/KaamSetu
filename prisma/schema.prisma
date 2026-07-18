@@ -43,6 +43,7 @@ enum BookingStatus {
   REQUESTED
   QUOTED
   CONFIRMED
+  EN_ROUTE
   IN_PROGRESS
   COMPLETED
   CANCELLED
@@ -79,6 +80,7 @@ enum NotificationType {
   PROMOTION
   ANNOUNCEMENT
   DISPUTE_UPDATE
+  BOOKING_MESSAGE
 }
 
 enum MembershipTarget {
@@ -129,6 +131,7 @@ model User {
   notifications       Notification[]
   subscriptions       Subscription[]
   supportTickets      SupportTicket[]
+  bookingMessages     BookingMessage[]
 
   @@index([role])
   @@index([city])
@@ -341,6 +344,9 @@ model Booking {
   longitude           Float?
   packageId           String?
   cancellationReason  String?
+  serviceStartOtp           String?
+  serviceStartOtpExpiresAt  DateTime?
+  serviceStartedAt          DateTime?
   metadata            Json?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -358,6 +364,7 @@ model Booking {
   media               BookingMedia[]
   recurringSchedule   RecurringSchedule?
   marketplaceQuotes   MarketplaceQuote[]
+  messages            BookingMessage[]
 
   @@index([customerId])
   @@index([professionalId])
@@ -687,4 +694,18 @@ model PredefinedLanguage {
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+model BookingMessage {
+  id        String   @id @default(cuid())
+  bookingId String
+  senderId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sender  User    @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+  @@index([senderId])
 }

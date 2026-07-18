@@ -6,6 +6,8 @@ import { BookingActions } from "@/components/booking/booking-actions";
 import { QuoteForm } from "@/components/booking/quote-form";
 import { BookingStatusBadge } from "@/components/booking/status-badge";
 import { EmergencyAcceptButton, MarketplaceQuoteForm } from "@/components/booking/marketplace-actions";
+import { BookingChat } from "@/components/booking/booking-chat";
+import { isBookingChatEnabled } from "@/lib/booking-chat";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 
@@ -54,7 +56,7 @@ export default async function ProBookingsPage() {
           <h1 className="text-2xl font-bold mb-6">Manage Bookings</h1>
           <div className="space-y-4">
             {bookings.map((booking) => (
-              <Card key={booking.id}>
+              <Card key={booking.id} id={`booking-${booking.id}`}>
                 <CardHeader className="flex flex-row justify-between pb-2">
                   <div>
                     <CardTitle className="text-lg">{booking.title}</CardTitle>
@@ -97,6 +99,17 @@ export default async function ProBookingsPage() {
 
                   {booking.professionalId === pro.id && (
                     <BookingActions bookingId={booking.id} status={booking.status} />
+                  )}
+
+                  {booking.professionalId === pro.id && (
+                    <BookingChat
+                      bookingId={booking.id}
+                      currentUserId={session.user.id}
+                      enabled={isBookingChatEnabled(booking.status, booking.professionalId)}
+                      otherPartyName={booking.customer.user.name}
+                      otherPartyImage={booking.customer.user.image}
+                      viewerRole="professional"
+                    />
                   )}
                 </CardContent>
               </Card>

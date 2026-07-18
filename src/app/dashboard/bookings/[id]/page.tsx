@@ -6,10 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingStatusBadge } from "@/components/booking/status-badge";
 import { BookingTimeline } from "@/components/booking/timeline";
 import { ReviewForm } from "@/components/reviews/review-form";
+import { CustomerBookingJourney } from "@/components/booking/customer-booking-journey";
 import { PaymentButton } from "@/components/payments/payment-button";
 import { QuoteAcceptActions } from "@/components/booking/quote-accept-actions";
 import { CustomerBookingActions } from "@/components/booking/customer-booking-actions";
 import { MarketplaceQuoteCompare } from "@/components/booking/marketplace-actions";
+import { BookingChat } from "@/components/booking/booking-chat";
+import { isBookingChatEnabled } from "@/lib/booking-chat";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import Image from "next/image";
@@ -58,6 +61,14 @@ export default async function BookingDetailPage({
 
           {booking.isEmergency && (
             <p className="text-sm text-red-500 font-medium">Emergency booking</p>
+          )}
+
+          {!["CANCELLED", "DISPUTED"].includes(booking.status) && (
+            <CustomerBookingJourney
+              status={booking.status}
+              professional={booking.professional}
+              serviceStartOtp={booking.serviceStartOtp}
+            />
           )}
 
           <Card>
@@ -118,6 +129,15 @@ export default async function BookingDetailPage({
           </Card>
 
           <BookingTimeline history={booking.statusHistory} />
+
+          <BookingChat
+            bookingId={booking.id}
+            currentUserId={session.user.id}
+            enabled={isBookingChatEnabled(booking.status, booking.professionalId)}
+            otherPartyName={booking.professional?.user.name}
+            otherPartyImage={booking.professional?.user.image}
+            viewerRole="customer"
+          />
 
           {booking.type === "MARKETPLACE" && (
             <MarketplaceQuoteCompare bookingId={booking.id} quotes={booking.marketplaceQuotes} />
