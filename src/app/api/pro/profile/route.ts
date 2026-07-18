@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sanitizeProSelections } from "@/lib/pro-options";
+import { mergeSkillsWithServices, sanitizeProSelections } from "@/lib/pro-options";
 
 const profileSchema = z.object({
   bio: z.string().optional(),
@@ -59,8 +59,13 @@ export async function PATCH(req: Request) {
   if (!pro) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const categorySlugs = pro.services.map((s) => s.category.slug);
+  const categoryNames = pro.services.map((s) => s.category.name);
+  const mergedSkills = data.skills
+    ? mergeSkillsWithServices(categoryNames, data.skills)
+    : undefined;
+
   const sanitized = await sanitizeProSelections({
-    skills: data.skills,
+    skills: mergedSkills,
     serviceAreas: data.serviceAreas,
     languages: data.languages,
     city: pro.user.city,
@@ -137,6 +142,36 @@ export async function PUT(req: Request) {
         data: slots.map((s) => ({ ...s, professionalId: pro.id })),
       });
     }
+    return NextResponse.json({ success: true });
+  }
+
+  if (body.type === "categories") {
+    const categoryIds = z.array(z.string()).parse(body.categoryIds);
+    const pro = await prisma.professionalProfile.findUnique({
+      where: { userId: session.user.id },
+      include: { services: true },
+    });
+    if (!pro) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const existingIds = pro.services.map((s) => s.categoryId);
+    const toRemove = pro.services.filter((s) => !categoryIds.includes(s.categoryId));
+    const toAdd = categoryIds.filter((id) => !existingIds.includes(id));
+
+    await prisma.$transaction([
+      ...toRemove.map((s) =>
+        prisma.professionalService.delete({ where: { id: s.id } })
+      ),
+      ...toAdd.map((categoryId) =>
+        prisma.professionalService.create({
+          data: {
+            professionalId: pro.id,
+            categoryId,
+            title: "General Service",
+            priceType: "quote",
+          },
+        })
+      ),
+    ]);
     return NextResponse.json({ success: true });
   }
 

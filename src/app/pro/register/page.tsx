@@ -36,7 +36,7 @@ export default function ProRegisterPage() {
   const [step, setStep] = useState(1);
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [cities, setCities] = useState<CityOption[]>([]);
-  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [specializationOptions, setSpecializationOptions] = useState<string[]>([]);
   const [areaOptions, setAreaOptions] = useState<string[]>([]);
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [documentUrls, setDocumentUrls] = useState<string[]>([]);
@@ -52,7 +52,7 @@ export default function ProRegisterPage() {
     city: "",
     bio: "",
     experienceYears: 0,
-    skills: [] as string[],
+    specializations: [] as string[],
     languages: [] as string[],
     certifications: "",
     serviceAreas: [] as string[],
@@ -79,9 +79,15 @@ export default function ProRegisterPage() {
     fetch(`/api/pro/options?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        setSkillOptions(data.skills || []);
+        setSpecializationOptions(data.specializations || []);
         setAreaOptions(data.serviceAreas || []);
         setLanguageOptions(data.languages || []);
+        setForm((f) => ({
+          ...f,
+          specializations: f.specializations.filter((s) =>
+            (data.specializations || []).includes(s)
+          ),
+        }));
       });
   }, [form.city, form.categoryIds, groups, step]);
 
@@ -111,6 +117,10 @@ export default function ProRegisterPage() {
     e.target.value = "";
   }
 
+  const selectedCategories = groups
+    .flatMap((g) => g.categories)
+    .filter((c) => form.categoryIds.includes(c.id));
+
   async function handleSubmit() {
     setLoading(true);
     setError("");
@@ -120,6 +130,7 @@ export default function ProRegisterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        skills: form.specializations,
         documentUrls,
         certifications: form.certifications.split(",").map((s) => s.trim()).filter(Boolean),
       }),
@@ -209,6 +220,19 @@ export default function ProRegisterPage() {
 
           {step === 3 && (
             <div className="space-y-4">
+              {selectedCategories.length > 0 && (
+                <div className="rounded-lg border border-brand/20 bg-brand/5 px-4 py-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">{t.proRegister.servicesAutoAdded}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCategories.map((c) => (
+                      <span key={c.id} className="text-xs px-2 py-1 rounded-full bg-brand/10 text-brand border border-brand/20">
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>{t.proRegister.aboutYou}</Label>
                 <Textarea value={form.bio} onChange={(e) => update("bio", e.target.value)} rows={4} />
@@ -219,11 +243,13 @@ export default function ProRegisterPage() {
               </div>
 
               <OptionPicker
-                label={t.proRegister.skills}
-                options={skillOptions}
-                selected={form.skills}
-                onChange={(skills) => update("skills", skills)}
+                label={t.proRegister.specializations}
+                options={specializationOptions}
+                selected={form.specializations}
+                onChange={(specializations) => update("specializations", specializations)}
+                emptyMessage={t.proRegister.specializationsEmpty}
               />
+              <p className="text-xs text-muted-foreground">{t.proRegister.specializationsHint}</p>
 
               <OptionPicker
                 label={t.proRegister.serviceAreas}
@@ -250,7 +276,7 @@ export default function ProRegisterPage() {
                 <Button
                   onClick={() => setStep(4)}
                   className="flex-1"
-                  disabled={form.skills.length === 0 || form.serviceAreas.length === 0}
+                  disabled={form.serviceAreas.length === 0}
                 >
                   {t.common.continue}
                 </Button>

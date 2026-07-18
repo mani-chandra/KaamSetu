@@ -41,7 +41,7 @@ export default async function CustomerBookingsPage() {
                       </Link>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {booking.professional.user.name} · {booking.category.name}
+                      {booking.professional?.user.name ?? "Open request"} · {booking.category.name}
                     </p>
                   </div>
                   <BookingStatusBadge status={booking.status} />

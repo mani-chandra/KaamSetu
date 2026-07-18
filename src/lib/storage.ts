@@ -1,65 +1,115 @@
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
-const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = [
+export const UPLOAD_MAX_SIZE = 25 * 1024 * 1024;
+
+export const UPLOAD_ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
   "application/pdf",
-];
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+] as const;
+
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  heic: "image/heic",
+  heif: "image/heif",
+  pdf: "application/pdf",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+};
+
+export function resolveUploadMimeType(file: File): string {
+  if (file.type && file.type !== "application/octet-stream") return file.type;
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return EXT_TO_MIME[ext] || file.type;
+}
+
+function isVideoMime(mime: string): boolean {
+  return mime.startsWith("video/");
+}
+
+async function saveLocal(
+  file: File,
+  folder: string,
+  mime: string
+): Promise<{ url: string; error?: string }> {
+  try {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const ext = file.name.split(".").pop()?.toLowerCase() || (isVideoMime(mime) ? "mp4" : "jpg");
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const dir = path.join(process.cwd(), "public", "uploads", folder);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), buffer);
+    return { url: `/uploads/${folder}/${filename}` };
+  } catch (err) {
+    console.error("Local upload failed:", err);
+    return { url: "", error: "Failed to save file locally" };
+  }
+}
+
+async function saveToCloudinary(
+  file: File,
+  folder: string,
+  mime: string
+): Promise<{ url: string; error?: string } | null> {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName || !uploadPreset) return null;
+
+  try {
+    const resourceType = isVideoMime(mime) ? "video" : "image";
+    const form = new FormData();
+    form.append("file", file);
+    form.append("upload_preset", uploadPreset);
+    form.append("folder", `kaamsetu/${folder}`);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+      { method: "POST", body: form }
+    );
+
+    const data = (await res.json()) as { secure_url?: string; error?: { message?: string } };
+    if (res.ok && data.secure_url) {
+      return { url: data.secure_url };
+    }
+    console.error("Cloudinary upload failed:", data.error?.message || res.status);
+    return null;
+  } catch (err) {
+    console.error("Cloudinary upload error:", err);
+    return null;
+  }
+}
 
 export async function saveUploadedFile(
   file: File,
   folder: string
 ): Promise<{ url: string; error?: string }> {
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  const mime = resolveUploadMimeType(file);
+
+  if (!UPLOAD_ALLOWED_TYPES.includes(mime as (typeof UPLOAD_ALLOWED_TYPES)[number])) {
     return { url: "", error: "Invalid file type" };
   }
-  if (file.size > MAX_SIZE) {
-    return { url: "", error: "File too large (max 5MB)" };
+  if (file.size > UPLOAD_MAX_SIZE) {
+    return { url: "", error: "File too large (max 25MB)" };
   }
 
-  // Cloudinary (production)
-  if (
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
-  ) {
-    const bytes = await file.arrayBuffer();
-    const base64 = Buffer.from(bytes).toString("base64");
-    const dataUri = `data:${file.type};base64,${base64}`;
+  const cloudinary = await saveToCloudinary(file, folder, mime);
+  if (cloudinary?.url) return cloudinary;
+  if (cloudinary?.error) return cloudinary;
 
-    const auth = Buffer.from(
-      `${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`
-    ).toString("base64");
-
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ file: dataUri, folder: `kaamsetu/${folder}` }),
-      }
-    );
-
-    if (res.ok) {
-      const data = await res.json();
-      return { url: data.secure_url };
-    }
-  }
-
-  // Local fallback (dev)
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", folder);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), buffer);
-  return { url: `/uploads/${folder}/${filename}` };
+  return saveLocal(file, folder, mime);
 }

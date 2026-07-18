@@ -28,7 +28,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   const isCustomer = payment.booking.customer.userId === session.user.id;
-  const isPro = payment.booking.professional.userId === session.user.id;
+  const isPro = payment.booking.professional?.userId === session.user.id;
   const isAdmin = session.user.role === "ADMIN";
 
   if (!isCustomer && !isPro && !isAdmin) {
@@ -41,7 +41,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     currency: payment.currency,
     paidAt: payment.paidAt,
     customerName: payment.booking.customer.user.name || "Customer",
-    professionalName: payment.booking.professional.user.name || "Professional",
+    professionalName: payment.booking.professional?.user.name || "Professional",
     serviceName: payment.booking.category.name,
     bookingTitle: payment.booking.title,
     bookingDate: payment.booking.scheduledDate?.toLocaleDateString("en-IN") || "—",

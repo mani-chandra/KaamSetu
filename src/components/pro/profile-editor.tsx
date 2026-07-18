@@ -10,7 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { asStringArray } from "@/lib/utils";
+import { splitSkillsFromServices } from "@/lib/pro-options";
+import { useI18n } from "@/lib/i18n/context";
 import { OptionPicker } from "@/components/pro/option-picker";
+import { GroupedCategoryPicker } from "@/components/pro/grouped-category-picker";
 import {
   AvailabilityEditor,
   buildDaySchedules,
@@ -18,9 +21,19 @@ import {
   type DaySchedule,
 } from "@/components/pro/availability-editor";
 
+type Category = { id: string; name: string; slug: string; icon?: string | null };
+type CategoryGroup = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  categories: Category[];
+};
+
 type Service = {
   id: string;
-  category: { name: string; slug: string };
+  categoryId: string;
+  category: { id: string; name: string; slug: string };
   price: number | null;
   minPrice: number | null;
   maxPrice: number | null;
@@ -46,12 +59,20 @@ type ProfileData = {
 
 export function ProProfileEditor({ profile }: { profile: ProfileData }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState(
+    profile.services.map((s) => s.categoryId)
+  );
+  const [specializationOptions, setSpecializationOptions] = useState<string[]>([]);
   const [areaOptions, setAreaOptions] = useState<string[]>([]);
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
-  const [selectedSkills, setSelectedSkills] = useState(asStringArray(profile.skills));
+  const categoryNames = profile.services.map((s) => s.category.name);
+  const [selectedSpecializations, setSelectedSpecializations] = useState(
+    splitSkillsFromServices(categoryNames, asStringArray(profile.skills))
+  );
   const [selectedAreas, setSelectedAreas] = useState(asStringArray(profile.serviceAreas));
   const [selectedLanguages, setSelectedLanguages] = useState(asStringArray(profile.languages));
   const [form, setForm] = useState({
@@ -65,7 +86,13 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
   const [portfolio, setPortfolio] = useState(profile.portfolio);
   const [schedules, setSchedules] = useState<DaySchedule[]>(buildDaySchedules(profile.availability));
 
-  const categorySlugs = profile.services.map((s) => s.category.slug).join(",");
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => setGroups(data.groups || []));
+  }, []);
+
+  const categorySlugs = services.map((s) => s.category.slug).join(",");
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -75,17 +102,43 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
     fetch(`/api/pro/options?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        const skills = data.skills || [];
+        const specializations = data.specializations || [];
         const areas = data.serviceAreas || [];
         const languages = data.languages || [];
-        setSkillOptions(skills);
+        setSpecializationOptions(specializations);
         setAreaOptions(areas);
         setLanguageOptions(languages);
-        setSelectedSkills((prev) => prev.filter((s) => skills.includes(s)));
+        setSelectedSpecializations((prev) => prev.filter((s) => specializations.includes(s)));
         setSelectedAreas((prev) => prev.filter((a) => areas.includes(a)));
         setSelectedLanguages((prev) => prev.filter((l) => languages.includes(l)));
       });
   }, [profile.user.city, categorySlugs]);
+
+  useEffect(() => {
+    const allCategories = groups.flatMap((g) => g.categories);
+    setServices((prev) => {
+      const byCategoryId = new Map(prev.map((s) => [s.categoryId, s]));
+      return selectedCategoryIds.map((categoryId) => {
+        const existing = byCategoryId.get(categoryId);
+        if (existing) return existing;
+        const cat = allCategories.find((c) => c.id === categoryId);
+        return {
+          id: `pending-${categoryId}`,
+          categoryId,
+          category: {
+            id: categoryId,
+            name: cat?.name || "",
+            slug: cat?.slug || "",
+          },
+          price: null,
+          minPrice: null,
+          maxPrice: null,
+          priceType: "quote",
+          description: null,
+        };
+      });
+    });
+  }, [selectedCategoryIds, groups]);
 
   async function saveProfile() {
     setSaving(true);
@@ -96,7 +149,7 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
       body: JSON.stringify({
         bio: form.bio,
         experienceYears: form.experienceYears,
-        skills: selectedSkills,
+        skills: selectedSpecializations,
         languages: selectedLanguages,
         certifications: form.certifications.split(",").map((s) => s.trim()).filter(Boolean),
         serviceAreas: selectedAreas,
@@ -107,16 +160,35 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
     const payload = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
-      setMessage("Profile saved!");
+      setMessage(t.proProfile.profileSaved);
       router.refresh();
     } else {
-      setMessage(payload.error || "Failed to save profile");
+      setMessage(payload.error || t.proProfile.saveFailed);
+    }
+  }
+
+  async function saveCategories() {
+    setSaving(true);
+    setMessage("");
+    const res = await fetch("/api/pro/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "categories", categoryIds: selectedCategoryIds }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setMessage(t.proProfile.categoriesUpdated);
+      router.refresh();
+    } else {
+      const payload = await res.json().catch(() => ({}));
+      setMessage(payload.error || t.proProfile.saveFailed);
     }
   }
 
   async function saveServices() {
     setSaving(true);
     for (const svc of services) {
+      if (svc.id.startsWith("pending-")) continue;
       await fetch("/api/pro/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -132,7 +204,7 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
       });
     }
     setSaving(false);
-    setMessage("Services updated!");
+    setMessage(t.proProfile.servicesUpdated);
   }
 
   async function saveAvailability() {
@@ -146,7 +218,7 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
       }),
     });
     setSaving(false);
-    setMessage("Availability saved!");
+    setMessage(t.proProfile.availabilitySaved);
   }
 
   async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -171,31 +243,42 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
     const res = await fetch("/api/pro/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "portfolio", imageUrl: uploadData.url, title: "Work sample" }),
+      body: JSON.stringify({
+        type: "portfolio",
+        imageUrl: uploadData.url,
+        title: t.proProfile.workSample,
+      }),
     });
     const data = await res.json();
     if (res.ok) setPortfolio((p) => [...p, data.item]);
   }
 
+  const isError =
+    message.includes("Failed") ||
+    message.includes("Invalid") ||
+    message === t.proProfile.saveFailed;
+
   return (
     <div className="space-y-4">
       {message && (
-        <p className={`text-sm font-medium ${message.includes("Failed") || message.includes("Invalid") ? "text-destructive" : "text-brand"}`}>
+        <p className={`text-sm font-medium ${isError ? "text-destructive" : "text-brand"}`}>
           {message}
         </p>
       )}
 
       <Tabs defaultValue="about">
         <TabsList>
-          <TabsTrigger value="about">About</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="availability">Availability</TabsTrigger>
-          <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+          <TabsTrigger value="about">{t.proProfile.tabAbout}</TabsTrigger>
+          <TabsTrigger value="services">{t.proProfile.tabServices}</TabsTrigger>
+          <TabsTrigger value="availability">{t.proProfile.tabAvailability}</TabsTrigger>
+          <TabsTrigger value="portfolio">{t.proProfile.tabPortfolio}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="about" className="space-y-4 mt-4">
           <Card>
-            <CardHeader><CardTitle>Profile photo</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>{t.proProfile.profilePhoto}</CardTitle>
+            </CardHeader>
             <CardContent className="flex items-center gap-4">
               {form.image && (
                 <div className="relative h-20 w-20 rounded-full overflow-hidden">
@@ -206,58 +289,105 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
             </CardContent>
           </Card>
           <div className="space-y-2">
-            <Label>Bio</Label>
-            <Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={4} />
+            <Label>{t.proProfile.bio}</Label>
+            <Textarea
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              rows={4}
+            />
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Experience (years)</Label>
-              <Input type="number" value={form.experienceYears} onChange={(e) => setForm({ ...form, experienceYears: Number(e.target.value) })} />
+              <Label>{t.proProfile.experienceYears}</Label>
+              <Input
+                type="number"
+                value={form.experienceYears}
+                onChange={(e) => setForm({ ...form, experienceYears: Number(e.target.value) })}
+              />
             </div>
             <div className="space-y-2">
-              <Label>Response time (minutes)</Label>
-              <Input value={form.responseTime} onChange={(e) => setForm({ ...form, responseTime: e.target.value })} />
+              <Label>{t.proProfile.responseTime}</Label>
+              <Input
+                value={form.responseTime}
+                onChange={(e) => setForm({ ...form, responseTime: e.target.value })}
+              />
             </div>
           </div>
 
-          <OptionPicker
-            label="Skills"
-            options={skillOptions}
-            selected={selectedSkills}
-            onChange={setSelectedSkills}
-            emptyMessage="Skills load based on your service categories."
-          />
+          {services.length > 0 && (
+            <div className="rounded-lg border border-brand/20 bg-brand/5 px-4 py-3 space-y-2">
+              <p className="text-xs text-muted-foreground">{t.proProfile.servicesAutoAdded}</p>
+              <div className="flex flex-wrap gap-2">
+                {services.map((s) => (
+                  <span key={s.categoryId} className="text-xs px-2 py-1 rounded-full bg-brand/10 text-brand border border-brand/20">
+                    {s.category.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <OptionPicker
-            label="Service areas"
+            label={t.proProfile.specializations}
+            options={specializationOptions}
+            selected={selectedSpecializations}
+            onChange={setSelectedSpecializations}
+            emptyMessage={t.proProfile.specializationsEmpty}
+          />
+          <p className="text-xs text-muted-foreground">{t.proProfile.specializationsHint}</p>
+
+          <OptionPicker
+            label={t.proProfile.serviceAreas}
             options={areaOptions}
             selected={selectedAreas}
             onChange={setSelectedAreas}
-            emptyMessage={`No areas found for ${profile.user.city || "your city"}. Update your city in account settings.`}
+            emptyMessage={t.proProfile.areasEmpty}
           />
 
           <OptionPicker
-            label="Languages"
+            label={t.proProfile.languages}
             options={languageOptions}
             selected={selectedLanguages}
             onChange={setSelectedLanguages}
           />
 
           <div className="space-y-2">
-            <Label>Certifications (comma separated)</Label>
-            <Input value={form.certifications} onChange={(e) => setForm({ ...form, certifications: e.target.value })} />
+            <Label>{t.proProfile.certifications}</Label>
+            <Input
+              value={form.certifications}
+              onChange={(e) => setForm({ ...form, certifications: e.target.value })}
+            />
           </div>
-          <Button onClick={saveProfile} disabled={saving}>Save profile</Button>
+          <Button onClick={saveProfile} disabled={saving}>
+            {t.proProfile.saveProfile}
+          </Button>
         </TabsContent>
 
         <TabsContent value="services" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.proProfile.servicesOffer}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <GroupedCategoryPicker
+                groups={groups}
+                selectedIds={selectedCategoryIds}
+                onChange={setSelectedCategoryIds}
+                hint={t.proProfile.servicesHint}
+              />
+              <Button onClick={saveCategories} disabled={saving || selectedCategoryIds.length === 0}>
+                {t.proProfile.saveCategories}
+              </Button>
+            </CardContent>
+          </Card>
+
           {services.map((svc, i) => (
-            <Card key={svc.id}>
+            <Card key={svc.categoryId}>
               <CardContent className="pt-6 space-y-3">
                 <p className="font-medium">{svc.category.name}</p>
                 <div className="grid sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <Label>Fixed price (₹)</Label>
+                    <Label>{t.proProfile.fixedPrice}</Label>
                     <Input
                       type="number"
                       value={svc.price ?? ""}
@@ -269,7 +399,7 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label>Min quote (₹)</Label>
+                    <Label>{t.proProfile.minQuote}</Label>
                     <Input
                       type="number"
                       value={svc.minPrice ?? ""}
@@ -281,7 +411,7 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label>Max quote (₹)</Label>
+                    <Label>{t.proProfile.maxQuote}</Label>
                     <Input
                       type="number"
                       value={svc.maxPrice ?? ""}
@@ -296,12 +426,18 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
               </CardContent>
             </Card>
           ))}
-          <Button onClick={saveServices} disabled={saving}>Save pricing</Button>
+          {services.length > 0 && (
+            <Button onClick={saveServices} disabled={saving}>
+              {t.proProfile.savePricing}
+            </Button>
+          )}
         </TabsContent>
 
         <TabsContent value="availability" className="space-y-4 mt-4">
           <AvailabilityEditor schedules={schedules} onChange={setSchedules} />
-          <Button onClick={saveAvailability} disabled={saving}>Save availability</Button>
+          <Button onClick={saveAvailability} disabled={saving}>
+            {t.proProfile.saveAvailability}
+          </Button>
         </TabsContent>
 
         <TabsContent value="portfolio" className="space-y-4 mt-4">
@@ -309,7 +445,12 @@ export function ProProfileEditor({ profile }: { profile: ProfileData }) {
           <div className="grid grid-cols-3 gap-3">
             {portfolio.map((item) => (
               <div key={item.id} className="relative aspect-square rounded-lg overflow-hidden">
-                <Image src={item.imageUrl} alt={item.title || "Portfolio"} fill className="object-cover" />
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title || t.proProfile.workSample}
+                  fill
+                  className="object-cover"
+                />
               </div>
             ))}
           </div>

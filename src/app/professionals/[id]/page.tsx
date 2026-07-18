@@ -231,7 +231,7 @@ export default async function ProfessionalProfilePage({
                 </div>
               ))}
               <Button className="w-full mt-4" asChild>
-                <Link href={`/book/${professional.id}`}>Book Now</Link>
+                <Link href={`/book?pro=${professional.id}`}>Book Now</Link>
               </Button>
               {session?.user?.role === "CUSTOMER" && (
                 <SaveProfessionalButton professionalId={professional.id} initialSaved={isSaved} />

@@ -1,10 +1,15 @@
-import { Suspense } from "react";
-import { BookForm } from "@/components/booking/book-form";
+import { redirect } from "next/navigation";
 
-export default function BookPage() {
-  return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-12 text-center">Loading...</div>}>
-      <BookForm />
-    </Suspense>
-  );
+export default async function BookProRedirectPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ proId: string }>;
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const { proId } = await params;
+  const { category } = await searchParams;
+  const query = new URLSearchParams({ pro: proId });
+  if (category) query.set("category", category);
+  redirect(`/book?${query.toString()}`);
 }

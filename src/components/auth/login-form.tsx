@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthScene } from "@/components/3d/auth-scene";
 import { useI18n } from "@/lib/i18n/context";
+import { getDashboardPath } from "@/lib/dashboard-path";
 import { ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
+import type { UserRole } from "@prisma/client";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +40,10 @@ export function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
+    const session = await getSession();
+    const role = session?.user?.role as UserRole | undefined;
+    const destination = callbackUrl || getDashboardPath(role);
+    router.push(destination);
     router.refresh();
   }
 

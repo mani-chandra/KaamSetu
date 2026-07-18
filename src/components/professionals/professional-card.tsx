@@ -97,7 +97,7 @@ export function ProfessionalCard({
                 <Link href={`/professionals/${professional.id}`}>View Profile</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link href={`/book/${professional.id}${categorySlug ? `?category=${categorySlug}` : ""}`}>
+                <Link href={`/book?pro=${professional.id}${categorySlug ? `&category=${categorySlug}` : ""}`}>
                   Book
                 </Link>
               </Button>

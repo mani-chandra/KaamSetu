@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { AdminNav } from "@/components/layout/dashboard-nav";
+import { AdminPageTitle } from "@/components/admin/admin-page-title";
 import { AdminCategoryManager } from "@/components/admin/category-manager";
 
 export default async function AdminCategoriesPage() {
@@ -15,7 +16,7 @@ export default async function AdminCategoriesPage() {
       <div className="grid lg:grid-cols-4 gap-8">
         <AdminNav />
         <div className="lg:col-span-3">
-          <h1 className="text-2xl font-bold mb-6">Manage Categories</h1>
+          <AdminPageTitle titleKey="manageCategories" />
           <AdminCategoryManager categories={categories} />
         </div>
       </div>

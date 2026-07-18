@@ -12,7 +12,7 @@ type Dispute = {
   booking: {
     title: string;
     customer: { user: { name: string | null } };
-    professional: { user: { name: string | null } };
+    professional: { user: { name: string | null } } | null;
     category: { name: string };
   };
 };
@@ -37,7 +37,7 @@ export function AdminDisputeManager({ disputes: initial }: { disputes: Dispute[]
           <div className="font-medium">{d.booking.title} · {d.booking.category.name}</div>
           <p>{d.reason}</p>
           <p className="text-xs text-muted-foreground">
-            {d.booking.customer.user.name} vs {d.booking.professional.user.name} · {d.status}
+            {d.booking.customer.user.name} vs {d.booking.professional?.user.name ?? "Unassigned"} · {d.status}
           </p>
           {d.status === "OPEN" && (
             <>

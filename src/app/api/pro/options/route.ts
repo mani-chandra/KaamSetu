@@ -3,6 +3,7 @@ import {
   getLanguageOptions,
   getServiceAreasForCity,
   getSkillsForCategories,
+  getSpecializationsForCategories,
 } from "@/lib/pro-options";
 import { prisma } from "@/lib/prisma";
 
@@ -18,13 +19,15 @@ export async function GET(req: Request) {
     });
     if (pro) {
       categorySlugs = pro.services.map((s) => s.category.slug);
-      const [skills, serviceAreas, languages] = await Promise.all([
+      const [skills, specializations, serviceAreas, languages] = await Promise.all([
         getSkillsForCategories(categorySlugs),
+        getSpecializationsForCategories(categorySlugs),
         getServiceAreasForCity(pro.user.city || city),
         getLanguageOptions(),
       ]);
       return NextResponse.json({
         skills,
+        specializations,
         serviceAreas,
         languages,
         city: pro.user.city,
@@ -32,14 +35,16 @@ export async function GET(req: Request) {
     }
   }
 
-  const [skills, serviceAreas, languages] = await Promise.all([
+  const [skills, specializations, serviceAreas, languages] = await Promise.all([
     getSkillsForCategories(categorySlugs),
+    getSpecializationsForCategories(categorySlugs),
     getServiceAreasForCity(city),
     getLanguageOptions(),
   ]);
 
   return NextResponse.json({
     skills,
+    specializations,
     serviceAreas,
     languages,
     city,

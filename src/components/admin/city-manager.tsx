@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card3D } from "@/components/3d/card-3d";
+import { useI18n } from "@/lib/i18n/context";
 
 type City = { id: string; name: string; state: string | null; isActive: boolean; _count?: { serviceAreas: number } };
 
 export function AdminCityManager({ cities: initial }: { cities: City[] }) {
+  const { t } = useI18n();
   const [cities, setCities] = useState(initial);
   const [form, setForm] = useState({ name: "", state: "" });
 
@@ -38,17 +40,17 @@ export function AdminCityManager({ cities: initial }: { cities: City[] }) {
     <div className="space-y-6">
       <Card3D className="p-6">
         <form onSubmit={createCity} className="flex flex-wrap gap-3">
-          <Input placeholder="City name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-          <Button type="submit">Add city</Button>
+          <Input placeholder={t.admin.cityNamePlaceholder} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <Input placeholder={t.admin.statePlaceholder} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+          <Button type="submit">{t.admin.addCity}</Button>
         </form>
       </Card3D>
       <div className="space-y-2">
         {cities.map((city) => (
           <Card3D key={city.id} className="p-4 flex justify-between items-center text-sm">
-            <span>{city.name}{city.state ? `, ${city.state}` : ""} · {city._count?.serviceAreas ?? 0} areas</span>
+            <span>{city.name}{city.state ? `, ${city.state}` : ""} · {city._count?.serviceAreas ?? 0} {t.admin.areasCount}</span>
             <Button size="sm" variant="outline" onClick={() => toggle(city.id, city.isActive)}>
-              {city.isActive ? "Deactivate" : "Activate"}
+              {city.isActive ? t.admin.deactivate : t.admin.activate}
             </Button>
           </Card3D>
         ))}

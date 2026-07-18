@@ -44,13 +44,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     },
   });
 
-  await notifyBookingEvent(
-    booking.professional.user.id,
-    "BOOKING_CANCELLED",
-    "Booking cancelled",
-    `"${booking.title}" was cancelled by the customer.`,
-    "/pro/dashboard/bookings"
-  );
+  if (booking.professional?.user.id) {
+    await notifyBookingEvent(
+      booking.professional.user.id,
+      "BOOKING_CANCELLED",
+      "Booking cancelled",
+      `"${booking.title}" was cancelled by the customer.`,
+      "/pro/dashboard/bookings"
+    );
+  }
 
   return NextResponse.json({ booking: updated });
 }

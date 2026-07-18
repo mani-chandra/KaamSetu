@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { createNotification } from "@/lib/notifications";
-import { validateProSelections } from "@/lib/pro-options";
+import { validateProSelections, mergeSkillsWithServices } from "@/lib/pro-options";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -13,7 +13,7 @@ const schema = z.object({
   city: z.string().optional(),
   bio: z.string().optional(),
   experienceYears: z.number().int().min(0).default(0),
-  skills: z.array(z.string()).default([]),
+  skills: z.array(z.string()).default([]), // specializations only; category names merged server-side
   languages: z.array(z.string()).default([]),
   certifications: z.array(z.string()).default([]),
   serviceAreas: z.array(z.string()).default([]),
@@ -34,12 +34,15 @@ export async function POST(req: Request) {
     const categories = data.categoryIds.length
       ? await prisma.serviceCategory.findMany({
           where: { id: { in: data.categoryIds } },
-          select: { slug: true },
+          select: { slug: true, name: true },
         })
       : [];
 
+    const categoryNames = categories.map((c) => c.name);
+    const mergedSkills = mergeSkillsWithServices(categoryNames, data.skills);
+
     const validationErrors = await validateProSelections({
-      skills: data.skills,
+      skills: mergedSkills,
       serviceAreas: data.serviceAreas,
       languages: data.languages,
       city: data.city,
@@ -63,7 +66,7 @@ export async function POST(req: Request) {
           create: {
             bio: data.bio,
             experienceYears: data.experienceYears,
-            skills: data.skills,
+            skills: mergedSkills,
             languages: data.languages,
             certifications: data.certifications,
             serviceAreas: data.serviceAreas,

@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { getDashboardPath } from "@/lib/dashboard-path";
 import { prisma } from "@/lib/prisma";
 import { getCategoryGroups } from "@/lib/categories";
 import { SearchForm } from "@/components/search/search-form";
@@ -17,6 +20,11 @@ import {
 import Image from "next/image";
 
 export default async function HomePage() {
+  const session = await auth();
+  if (session?.user?.role === "ADMIN" || session?.user?.role === "PROFESSIONAL") {
+    redirect(getDashboardPath(session.user.role));
+  }
+
   const [groups, stats, banners, recommendations] = await Promise.all([
     getCategoryGroups(),
     Promise.all([

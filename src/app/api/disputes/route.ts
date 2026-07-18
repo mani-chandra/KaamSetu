@@ -56,13 +56,15 @@ export async function POST(req: Request) {
     return d;
   });
 
-  await notifyBookingEvent(
-    booking.professional.user.id,
-    "DISPUTE_UPDATE",
-    "Dispute raised",
-    `A dispute was raised for "${booking.title}".`,
-    `/pro/dashboard/bookings`
-  );
+  if (booking.professional?.user.id) {
+    await notifyBookingEvent(
+      booking.professional.user.id,
+      "DISPUTE_UPDATE",
+      "Dispute raised",
+      `A dispute was raised for "${booking.title}".`,
+      `/pro/dashboard/bookings`
+    );
+  }
 
   const admins = await prisma.user.findMany({ where: { role: "ADMIN" } });
   await Promise.all(

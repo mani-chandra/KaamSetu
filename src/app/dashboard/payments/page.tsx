@@ -42,7 +42,7 @@ export default async function PaymentsPage() {
                     <span className="font-semibold text-brand">{formatCurrency(payment.amount)}</span>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    <p>{payment.booking.professional.user.name} · {payment.booking.category.name}</p>
+                    <p>{payment.booking.professional?.user.name ?? "Professional"} · {payment.booking.category.name}</p>
                     <p>Invoice: {payment.invoiceNumber}</p>
                     <p>Status: {payment.status}</p>
                     {payment.paidAt && <p>Paid: {formatDate(payment.paidAt)}</p>}

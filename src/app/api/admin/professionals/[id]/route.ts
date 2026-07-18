@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
   if (!pro) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (action === "approve") {
+  if (action === "approve" || action === "reactivate") {
     await prisma.professionalProfile.update({
       where: { id },
       data: { status: "APPROVED", isVerified: true, rejectionReason: null },
@@ -28,8 +28,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await notifyBookingEvent(
       pro.user.id,
       "PRO_APPROVED",
-      "Profile approved!",
-      "Your professional profile has been approved. You can now receive bookings.",
+      action === "reactivate" ? "Account reactivated" : "Profile approved!",
+      action === "reactivate"
+        ? "Your professional account has been reactivated on KaamSetu."
+        : "Your professional profile has been approved. You can now receive bookings.",
       "/pro/dashboard"
     );
   } else if (action === "reject") {
@@ -44,11 +46,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       "Your professional registration was not approved. Please contact support.",
       "/pro/register"
     );
-  } else if (action === "suspend") {
+  } else if (action === "remove" || action === "suspend") {
     await prisma.professionalProfile.update({
       where: { id },
-      data: { status: "SUSPENDED" },
+      data: { status: "SUSPENDED", isVerified: false },
     });
+    await notifyBookingEvent(
+      pro.user.id,
+      "PRO_REJECTED",
+      "Removed from platform",
+      "Your professional account has been removed from KaamSetu. Contact support if you believe this is a mistake.",
+      "/pro/register"
+    );
+  } else {
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
   return NextResponse.json({ success: true });

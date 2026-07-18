@@ -57,13 +57,15 @@ export async function POST(req: Request) {
     },
   });
 
-  await notifyBookingEvent(
-    booking.professional.user.id,
-    "PAYMENT_RECEIVED",
-    "Payment received",
-    `Payment of ₹${booking.amount} received for "${booking.title}".`,
-    "/pro/dashboard/earnings"
-  );
+  if (booking.professional?.user.id) {
+    await notifyBookingEvent(
+      booking.professional.user.id,
+      "PAYMENT_RECEIVED",
+      "Payment received",
+      `Payment of ₹${booking.amount} received for "${booking.title}".`,
+      "/pro/dashboard/earnings"
+    );
+  }
 
   return NextResponse.json({ payment });
 }

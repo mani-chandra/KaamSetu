@@ -23,6 +23,20 @@ enum ProfessionalStatus {
 enum BookingType {
   INSTANT
   QUOTE
+  RECURRING
+  MARKETPLACE
+  CONSULTATION
+  EMERGENCY
+}
+
+enum BookingFlowType {
+  INSTANT
+  REPAIR
+  INSPECTION
+  RECURRING
+  MARKETPLACE
+  CONSULTATION
+  EMERGENCY
 }
 
 enum BookingStatus {
@@ -201,6 +215,8 @@ model ProfessionalProfile {
   savedBy       SavedProfessional[]
   reviewReplies ReviewReply[]
   reviews       Review[]
+  marketplaceQuotes MarketplaceQuote[]
+  servicePackages   ServicePackage[]
 }
 
 model ServiceCategory {
@@ -223,6 +239,7 @@ model ServiceCategory {
   favoriteServices     FavoriteService[]
   bookings             Booking[]
   predefinedSkills     PredefinedSkill[]
+  servicePackages      ServicePackage[]
 
   @@index([groupId])
 }
@@ -301,38 +318,52 @@ model PortfolioItem {
 }
 
 model Booking {
-  id                 String        @id @default(cuid())
-  customerId         String
-  professionalId     String
-  categoryId         String
-  type               BookingType
-  status             BookingStatus @default(REQUESTED)
-  title              String
-  description        String?
-  scheduledDate      DateTime?
-  scheduledTime      String?
-  address            String?
-  city               String?
-  amount             Float?
-  cancellationReason String?
-  metadata           Json?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  id                  String           @id @default(cuid())
+  customerId          String
+  professionalId      String?
+  categoryId          String
+  type                BookingType
+  bookingFlow         BookingFlowType?
+  status              BookingStatus    @default(REQUESTED)
+  title               String
+  description         String?
+  scheduledDate       DateTime?
+  scheduledTime       String?
+  address             String?
+  city                String?
+  amount              Float?
+  budget              Float?
+  eventDate           DateTime?
+  consultationMode    String?
+  specialInstructions String?
+  isEmergency         Boolean          @default(false)
+  latitude            Float?
+  longitude           Float?
+  packageId           String?
+  cancellationReason  String?
+  metadata            Json?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
-  customer      CustomerProfile        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  professional  ProfessionalProfile    @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-  category      ServiceCategory        @relation(fields: [categoryId], references: [id])
-  quote         Quote?
-  statusHistory BookingStatusHistory[]
-  payment       Payment?
-  review        Review?
-  dispute       Dispute?
-  photos        BookingPhoto[]
+  customer            CustomerProfile     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  professional        ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  category            ServiceCategory     @relation(fields: [categoryId], references: [id])
+  package             ServicePackage?     @relation(fields: [packageId], references: [id])
+  quote               Quote?
+  statusHistory       BookingStatusHistory[]
+  payment             Payment?
+  review              Review?
+  dispute             Dispute?
+  photos              BookingPhoto[]
+  media               BookingMedia[]
+  recurringSchedule   RecurringSchedule?
+  marketplaceQuotes   MarketplaceQuote[]
 
   @@index([customerId])
   @@index([professionalId])
   @@index([status])
   @@index([city])
+  @@index([isEmergency, status])
 }
 
 model Quote {
@@ -412,6 +443,64 @@ model BookingPhoto {
   imageUrl  String
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model BookingMedia {
+  id        String @id @default(cuid())
+  bookingId String
+  url       String
+  mediaType String @default("photo")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+model ServicePackage {
+  id              String   @id @default(cuid())
+  categoryId      String
+  professionalId  String?
+  name            String
+  description     String?
+  price           Float
+  durationMinutes Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  category     ServiceCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  professional ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
+
+  @@index([categoryId])
+}
+
+model RecurringSchedule {
+  id            String    @id @default(cuid())
+  bookingId     String    @unique
+  frequency     String
+  preferredTime String
+  durationWeeks Int?
+  endDate       DateTime?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model MarketplaceQuote {
+  id             String      @id @default(cuid())
+  bookingId      String
+  professionalId String
+  amount         Float
+  message        String?
+  status         QuoteStatus @default(PENDING)
+  validUntil     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  booking      Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, professionalId])
+  @@index([bookingId])
 }
 
 model ReviewReply {

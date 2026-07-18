@@ -43,6 +43,7 @@ next-env.d.ts
 /public/uploads/**/*
 !/public/uploads/.gitkeep
 !/public/uploads/register/.gitkeep
+!/public/uploads/bookings/.gitkeep
 
 # local database
 /prisma/dev.db

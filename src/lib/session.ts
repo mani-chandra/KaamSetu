@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@prisma/client";
+import { getDashboardPath } from "@/lib/dashboard-path";
+
+export { getDashboardPath };
 
 export async function getSession() {
   return auth();
@@ -15,15 +18,4 @@ export async function requireAuth(allowedRoles?: UserRole[]) {
     redirect(getDashboardPath(session.user.role));
   }
   return session;
-}
-
-export function getDashboardPath(role: UserRole) {
-  switch (role) {
-    case "ADMIN":
-      return "/admin";
-    case "PROFESSIONAL":
-      return "/pro/dashboard";
-    default:
-      return "/dashboard";
-  }
 }

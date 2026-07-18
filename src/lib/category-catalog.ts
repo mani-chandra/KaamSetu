@@ -1,5 +1,7 @@
 /** Full KaamSetu service catalog — 16 groups with leaf categories for booking. */
 
+import { mergeCategoryMetadata } from "./booking-flows";
+
 export type CategoryCatalogItem = {
   name: string;
   slug: string;
@@ -341,5 +343,7 @@ export const ALL_CATALOG_CATEGORIES = CATEGORY_CATALOG.flatMap((g) =>
 );
 
 export function getCategoryMetadata(slug: string): Record<string, unknown> | undefined {
-  return ALL_CATALOG_CATEGORIES.find((c) => c.slug === slug)?.metadata;
+  const item = ALL_CATALOG_CATEGORIES.find((c) => c.slug === slug);
+  if (!item) return undefined;
+  return mergeCategoryMetadata(slug, item.metadata);
 }

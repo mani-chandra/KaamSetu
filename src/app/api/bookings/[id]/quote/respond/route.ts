@@ -39,13 +39,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         statusHistory: { create: { status: "CONFIRMED", note: "Quote accepted by customer" } },
       },
     });
-    await notifyBookingEvent(
-      booking.professional.user.id,
-      "QUOTE_ACCEPTED",
-      "Quote accepted",
-      `Customer accepted your quote of ₹${booking.quote.amount} for "${booking.title}".`,
-      "/pro/dashboard/bookings"
-    );
+    if (booking.professional?.user.id) {
+      await notifyBookingEvent(
+        booking.professional.user.id,
+        "QUOTE_ACCEPTED",
+        "Quote accepted",
+        `Customer accepted your quote of ₹${booking.quote.amount} for "${booking.title}".`,
+        "/pro/dashboard/bookings"
+      );
+    }
   } else {
     await prisma.quote.update({
       where: { bookingId },
@@ -58,13 +60,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         statusHistory: { create: { status: "CANCELLED", note: "Quote rejected by customer" } },
       },
     });
-    await notifyBookingEvent(
-      booking.professional.user.id,
-      "BOOKING_CANCELLED",
-      "Quote rejected",
-      `Customer rejected the quote for "${booking.title}".`,
-      "/pro/dashboard/bookings"
-    );
+    if (booking.professional?.user.id) {
+      await notifyBookingEvent(
+        booking.professional.user.id,
+        "BOOKING_CANCELLED",
+        "Quote rejected",
+        `Customer rejected the quote for "${booking.title}".`,
+        "/pro/dashboard/bookings"
+      );
+    }
   }
 
   return NextResponse.json({ success: true });

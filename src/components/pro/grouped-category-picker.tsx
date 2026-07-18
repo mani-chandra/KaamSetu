@@ -79,7 +79,7 @@ export function GroupedCategoryPicker({
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">{group.name}</p>
                     {groupSelected > 0 && (
-                      <p className="text-xs text-brand">{groupSelected} selected</p>
+                      <p className="text-xs text-brand">{groupSelected} {t.common.selected}</p>
                     )}
                   </div>
                 </div>

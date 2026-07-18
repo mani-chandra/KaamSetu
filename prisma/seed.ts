@@ -4,19 +4,23 @@ import {
   DEFAULT_COMMON_SKILLS,
   DEFAULT_LANGUAGES,
   DEFAULT_SERVICE_AREAS_BY_CITY,
+  DEFAULT_SKILLS_BY_CATEGORY,
 } from "../src/lib/pro-options-defaults";
 import { CATEGORY_CATALOG } from "../src/lib/category-catalog";
 import { getServiceIcon } from "../src/lib/service-icons";
+import { mergeCategoryMetadata, getBookingFlowConfig } from "../src/lib/booking-flows";
 
 const prisma = new PrismaClient();
 
-function defaultSkillsForCategory(categoryName: string): string[] {
-  return [
+function defaultSkillsForCategory(categoryName: string, categorySlug: string): string[] {
+  const specific = DEFAULT_SKILLS_BY_CATEGORY[categorySlug] ?? [];
+  const generic = [
     "On-site service",
     "Consultation",
     "Emergency availability",
     "Quality guarantee",
-  ].filter((s) => s !== categoryName);
+  ];
+  return [...new Set([...specific, ...generic])].filter((s) => s !== categoryName);
 }
 
 const cities = [
@@ -92,7 +96,8 @@ async function main() {
     });
 
     for (const [catIndex, category] of group.categories.entries()) {
-      await prisma.serviceCategory.upsert({
+      const metadata = mergeCategoryMetadata(category.slug, category.metadata);
+      const dbCategory = await prisma.serviceCategory.upsert({
         where: { slug: category.slug },
         update: {
           name: category.name,
@@ -100,17 +105,17 @@ async function main() {
           icon: getServiceIcon(category.slug),
           groupId: dbGroup.id,
           sortOrder: groupIndex * 1000 + catIndex,
-          metadata: category.metadata ?? undefined,
+          metadata,
           isActive: true,
         },
         create: {
           name: category.name,
           slug: category.slug,
           description: category.description,
-          icon: group.icon,
+          icon: getServiceIcon(category.slug),
           groupId: dbGroup.id,
           sortOrder: groupIndex * 1000 + catIndex,
-          metadata: category.metadata ?? undefined,
+          metadata,
           servicePage: {
             create: {
               headline: `Professional ${category.name} Services`,
@@ -130,13 +135,42 @@ async function main() {
 
   const allCategories = await prisma.serviceCategory.findMany();
   for (const category of allCategories) {
+    const flowConfig = getBookingFlowConfig(category.slug);
+    for (const pkg of flowConfig.packages ?? []) {
+      const existing = await prisma.servicePackage.findFirst({
+        where: { categoryId: category.id, name: pkg.name, professionalId: null },
+      });
+      if (existing) {
+        await prisma.servicePackage.update({
+          where: { id: existing.id },
+          data: {
+            price: pkg.price,
+            description: pkg.description,
+            durationMinutes: pkg.durationMinutes,
+          },
+        });
+      } else {
+        await prisma.servicePackage.create({
+          data: {
+            categoryId: category.id,
+            name: pkg.name,
+            description: pkg.description,
+            price: pkg.price,
+            durationMinutes: pkg.durationMinutes,
+          },
+        });
+      }
+    }
+  }
+
+  for (const category of allCategories) {
     await prisma.predefinedSkill.upsert({
       where: { categoryId_name: { categoryId: category.id, name: category.name } },
       update: { isActive: true, sortOrder: 0 },
       create: { categoryId: category.id, name: category.name, sortOrder: 0 },
     });
 
-    const extraSkills = defaultSkillsForCategory(category.name);
+    const extraSkills = defaultSkillsForCategory(category.name, category.slug);
     for (const [i, skillName] of extraSkills.entries()) {
       if (skillName === category.name) continue;
       await prisma.predefinedSkill.upsert({

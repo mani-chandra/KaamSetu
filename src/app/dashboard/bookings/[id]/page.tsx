@@ -9,6 +9,7 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { PaymentButton } from "@/components/payments/payment-button";
 import { QuoteAcceptActions } from "@/components/booking/quote-accept-actions";
 import { CustomerBookingActions } from "@/components/booking/customer-booking-actions";
+import { MarketplaceQuoteCompare } from "@/components/booking/marketplace-actions";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import Image from "next/image";
@@ -36,6 +37,10 @@ export default async function BookingDetailPage({
       quote: true,
       dispute: true,
       photos: true,
+      media: true,
+      recurringSchedule: true,
+      marketplaceQuotes: { include: { professional: { include: { user: true } } } },
+      package: true,
     },
   });
 
@@ -51,34 +56,55 @@ export default async function BookingDetailPage({
             <BookingStatusBadge status={booking.status} />
           </div>
 
+          {booking.isEmergency && (
+            <p className="text-sm text-red-500 font-medium">Emergency booking</p>
+          )}
+
           <Card>
             <CardHeader><CardTitle>Booking Details</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p><span className="font-medium">Professional:</span>{" "}
-                <Link href={`/professionals/${booking.professionalId}`} className="text-brand hover:underline">
-                  {booking.professional.user.name}
-                </Link>
-              </p>
+              {booking.professional ? (
+                <p><span className="font-medium">Professional:</span>{" "}
+                  <Link href={`/professionals/${booking.professionalId}`} className="text-brand hover:underline">
+                    {booking.professional.user.name}
+                  </Link>
+                </p>
+              ) : (
+                <p className="text-muted-foreground">Waiting for a professional to accept</p>
+              )}
               <p><span className="font-medium">Service:</span> {booking.category.name}</p>
-              <p><span className="font-medium">Type:</span> {booking.type}</p>
+              <p><span className="font-medium">Flow:</span> {booking.bookingFlow || booking.type}</p>
+              {booking.consultationMode && (
+                <p><span className="font-medium">Mode:</span> {booking.consultationMode}</p>
+              )}
+              {booking.package && (
+                <p><span className="font-medium">Package:</span> {booking.package.name} — {formatCurrency(booking.package.price)}</p>
+              )}
+              {booking.recurringSchedule && (
+                <p><span className="font-medium">Recurring:</span> {booking.recurringSchedule.frequency} at {booking.recurringSchedule.preferredTime}</p>
+              )}
               {booking.scheduledDate && (
                 <p><span className="font-medium">Scheduled:</span> {formatDate(booking.scheduledDate)} at {booking.scheduledTime}</p>
               )}
-              <p><span className="font-medium">Address:</span> {booking.address}, {booking.city}</p>
+              {booking.address && (
+                <p><span className="font-medium">Address:</span> {booking.address}, {booking.city}</p>
+              )}
               {booking.description && <p><span className="font-medium">Description:</span> {booking.description}</p>}
-              {booking.photos.length > 0 && (
+              {booking.specialInstructions && (
+                <p><span className="font-medium">Instructions:</span> {booking.specialInstructions}</p>
+              )}
+              {(booking.photos.length > 0 || booking.media.length > 0) && (
                 <div>
-                  <p className="font-medium mb-2">Issue photos:</p>
+                  <p className="font-medium mb-2">Attachments:</p>
                   <div className="flex flex-wrap gap-2">
                     {booking.photos.map((photo) => (
-                      <a
-                        key={photo.id}
-                        href={photo.imageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="relative h-20 w-20 rounded-lg overflow-hidden border border-white/10"
-                      >
+                      <a key={photo.id} href={photo.imageUrl} target="_blank" rel="noopener noreferrer" className="relative h-20 w-20 rounded-lg overflow-hidden border border-white/10">
                         <Image src={photo.imageUrl} alt="" fill className="object-cover" unoptimized />
+                      </a>
+                    ))}
+                    {booking.media.filter((m) => m.mediaType === "video").map((m) => (
+                      <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand underline">
+                        Video attachment
                       </a>
                     ))}
                   </div>
@@ -93,15 +119,19 @@ export default async function BookingDetailPage({
 
           <BookingTimeline history={booking.statusHistory} />
 
+          {booking.type === "MARKETPLACE" && (
+            <MarketplaceQuoteCompare bookingId={booking.id} quotes={booking.marketplaceQuotes} />
+          )}
+
           {booking.status === "QUOTED" && booking.quote?.status === "SENT" && (
             <QuoteAcceptActions bookingId={booking.id} amount={booking.quote.amount} />
           )}
 
-          {booking.status === "COMPLETED" && booking.payment?.status !== "PAID" && booking.amount && (
+          {booking.status === "COMPLETED" && booking.payment?.status !== "PAID" && booking.amount && booking.professionalId && (
             <PaymentButton bookingId={booking.id} amount={booking.amount} />
           )}
 
-          {booking.status === "COMPLETED" && !booking.review && (
+          {booking.status === "COMPLETED" && !booking.review && booking.professionalId && (
             <ReviewForm bookingId={booking.id} professionalId={booking.professionalId} />
           )}
 

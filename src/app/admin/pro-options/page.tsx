@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { AdminNav } from "@/components/layout/dashboard-nav";
+import { AdminPageTitle } from "@/components/admin/admin-page-title";
 import { AdminProOptionsManager } from "@/components/admin/pro-options-manager";
 
 export default async function AdminProOptionsPage() {
@@ -35,10 +36,7 @@ export default async function AdminProOptionsPage() {
       <div className="grid lg:grid-cols-4 gap-8">
         <AdminNav />
         <div className="lg:col-span-3">
-          <h1 className="text-2xl font-bold mb-2">Professional Options</h1>
-          <p className="text-muted-foreground mb-6">
-            Skills, service areas, and languages that professionals can select on their profile.
-          </p>
+          <AdminPageTitle titleKey="proOptionsTitle" descriptionKey="proOptionsDesc" />
           <AdminProOptionsManager
             skills={skills}
             serviceAreas={serviceAreas}

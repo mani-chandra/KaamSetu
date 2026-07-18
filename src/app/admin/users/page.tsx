@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminNav } from "@/components/layout/dashboard-nav";
+import { AdminPageTitle } from "@/components/admin/admin-page-title";
 import { Badge } from "@/components/ui/badge";
 
 export default async function AdminUsersPage() {
@@ -17,7 +18,7 @@ export default async function AdminUsersPage() {
       <div className="grid lg:grid-cols-4 gap-8">
         <AdminNav />
         <div className="lg:col-span-3">
-          <h1 className="text-2xl font-bold mb-6">Users</h1>
+          <AdminPageTitle titleKey="users" />
           <div className="space-y-2">
             {users.map((user) => (
               <Card key={user.id}>

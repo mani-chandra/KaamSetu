@@ -62,13 +62,15 @@ export async function POST(req: Request) {
 
     await updateProfessionalStats(data.professionalId);
 
-    await notifyBookingEvent(
-      booking.professional.user.id,
-      "REVIEW_RECEIVED",
-      "New review received",
-      `You received a ${data.rating}-star review.`,
-      `/pro/dashboard/reviews`
-    );
+    if (booking.professional?.user.id) {
+      await notifyBookingEvent(
+        booking.professional.user.id,
+        "REVIEW_RECEIVED",
+        "New review received",
+        `You received a ${data.rating}-star review.`,
+        `/pro/dashboard/reviews`
+      );
+    }
 
     return NextResponse.json({ review });
   } catch (error) {

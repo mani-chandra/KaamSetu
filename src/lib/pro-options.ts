@@ -38,6 +38,57 @@ export async function getSkillsForCategories(categorySlugs: string[]): Promise<s
   return Array.from(skills).sort();
 }
 
+/** Granular skills only — excludes service category names the pro already selected. */
+export async function getSpecializationsForCategories(categorySlugs: string[]): Promise<string[]> {
+  const allCategories = await prisma.serviceCategory.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, slug: true },
+  });
+
+  const offeredCategories = categorySlugs.length
+    ? allCategories.filter((c) => categorySlugs.includes(c.slug))
+    : [];
+
+  const categoryNames = new Set(offeredCategories.map((c) => c.name));
+  const categoryIds = offeredCategories.map((c) => c.id);
+
+  const dbSkills = await prisma.predefinedSkill.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { categoryId: null },
+        ...(categoryIds.length ? [{ categoryId: { in: categoryIds } }] : []),
+      ],
+    },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: { name: true },
+  });
+
+  const specializations = new Set<string>();
+  for (const skill of dbSkills) {
+    if (!categoryNames.has(skill.name)) {
+      specializations.add(skill.name);
+    }
+  }
+
+  return Array.from(specializations).sort();
+}
+
+export function mergeSkillsWithServices(
+  categoryNames: string[],
+  specializations: string[]
+): string[] {
+  return Array.from(new Set([...categoryNames, ...specializations])).sort();
+}
+
+export function splitSkillsFromServices(
+  categoryNames: string[],
+  allSkills: string[]
+): string[] {
+  const names = new Set(categoryNames);
+  return allSkills.filter((s) => !names.has(s));
+}
+
 export async function getServiceAreasForCity(city: string): Promise<string[]> {
   if (!city) return getAllServiceAreas();
 

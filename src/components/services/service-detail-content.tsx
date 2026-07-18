@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProfessionalCard } from "@/components/professionals/professional-card";
 import { useI18n } from "@/lib/i18n/context";
+import { getBookingFlow, getBookingFlowConfig } from "@/lib/booking-flows";
 
 type Professional = Parameters<typeof ProfessionalCard>[0]["professional"];
 
@@ -31,6 +32,8 @@ export function ServiceDetailContent({
   faq: { q: string; a: string }[];
 }) {
   const { t } = useI18n();
+  const flow = getBookingFlow(category.slug);
+  const flowConfig = getBookingFlowConfig(category.slug);
 
   return (
     <>
@@ -40,6 +43,23 @@ export function ServiceDetailContent({
         <p className="text-muted-foreground mt-2 max-w-2xl">
           {servicePage?.content || category.description}
         </p>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {flow !== "marketplace" && flow !== "emergency" && (
+            <Button asChild>
+              <Link href={`/book?category=${category.slug}&categoryId=${category.id}`}>{t.book.bookNow}</Link>
+            </Button>
+          )}
+          {flow === "marketplace" && (
+            <Button asChild>
+              <Link href={`/book?category=${category.slug}&categoryId=${category.id}`}>Get Quotes from Pros</Link>
+            </Button>
+          )}
+          {flowConfig.emergencyEligible && (
+            <Button variant="destructive" asChild>
+              <Link href={`/book/emergency?category=${category.slug}`}>Emergency Book</Link>
+            </Button>
+          )}
+        </div>
         {servicePage?.pricingGuidance && (
           <p className="text-sm text-brand mt-3 glass-panel inline-block px-4 py-2 rounded-lg">
             {servicePage.pricingGuidance}

@@ -24,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!booking) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isPro = session.user.role === "PROFESSIONAL" &&
-    booking.professional.userId === session.user.id;
+    booking.professional?.userId === session.user.id;
   const isCustomer = session.user.role === "CUSTOMER" &&
     booking.customer.userId === session.user.id;
   const isAdmin = session.user.role === "ADMIN";
@@ -41,14 +41,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     },
   });
 
-  const notifyUserId = isPro ? booking.customer.user.id : booking.professional.user.id;
-  await notifyBookingEvent(
-    notifyUserId,
-    status === "COMPLETED" ? "BOOKING_COMPLETED" : "BOOKING_CONFIRMED",
-    `Booking ${status.toLowerCase().replace("_", " ")}`,
-    `"${booking.title}" is now ${status.toLowerCase().replace("_", " ")}.`,
-    isPro ? `/dashboard/bookings/${id}` : `/pro/dashboard/bookings`
-  );
+  const notifyUserId = isPro
+    ? booking.customer.user.id
+    : booking.professional?.user.id;
+  if (notifyUserId) {
+    await notifyBookingEvent(
+      notifyUserId,
+      status === "COMPLETED" ? "BOOKING_COMPLETED" : "BOOKING_CONFIRMED",
+      `Booking ${status.toLowerCase().replace("_", " ")}`,
+      `"${booking.title}" is now ${status.toLowerCase().replace("_", " ")}.`,
+      isPro ? `/dashboard/bookings/${id}` : `/pro/dashboard/bookings`
+    );
+  }
 
   return NextResponse.json({ booking: updated });
 }

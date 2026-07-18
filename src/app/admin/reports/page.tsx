@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminNav } from "@/components/layout/dashboard-nav";
+import { AdminReportsContent } from "@/components/admin/admin-reports-content";
 
 export default async function AdminReportsPage() {
   await requireAuth(["ADMIN"]);
@@ -32,37 +32,13 @@ export default async function AdminReportsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="grid lg:grid-cols-4 gap-8">
         <AdminNav />
-        <div className="lg:col-span-3 space-y-6">
-          <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-
-          <Card>
-            <CardHeader><CardTitle>New Signups (30 days)</CardTitle></CardHeader>
-            <CardContent><div className="text-3xl font-bold">{recentSignups}</div></CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle>Bookings by Category</CardTitle></CardHeader>
-            <CardContent>
-              {byCategory.map((item) => (
-                <div key={item.categoryId} className="flex justify-between py-2 border-b last:border-0 text-sm">
-                  <span>{categoryMap[item.categoryId] || item.categoryId}</span>
-                  <span className="font-medium">{item._count.id}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle>Bookings by City</CardTitle></CardHeader>
-            <CardContent>
-              {byCity.map((item) => (
-                <div key={item.city} className="flex justify-between py-2 border-b last:border-0 text-sm">
-                  <span>{item.city}</span>
-                  <span className="font-medium">{item._count.id}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+        <div className="lg:col-span-3">
+          <AdminReportsContent
+            recentSignups={recentSignups}
+            byCategory={byCategory}
+            byCity={byCity}
+            categoryMap={categoryMap}
+          />
         </div>
       </div>
     </div>
