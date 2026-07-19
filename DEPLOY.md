@@ -22,11 +22,11 @@ Copy the connection string for the next steps.
 
 ### Step 3 — Vercel environment variables
 
-Import the repo at [vercel.com/new](https://vercel.com/new) and set:
+Import the repo at [vercel.com/new](https://vercel.com/new) and set **before the first deploy** (build reads `DATABASE_URL` for some pages):
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `DATABASE_URL` | Yes | PostgreSQL connection string — required at **build time** and runtime |
 | `AUTH_SECRET` | Yes | Random 32+ character secret |
 | `AUTH_URL` | Yes | `https://your-domain.vercel.app` |
 | `RAZORPAY_KEY_ID` | Yes (prod) | From Razorpay dashboard — demo payments are **disabled** in production without keys |

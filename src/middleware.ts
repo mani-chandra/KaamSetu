@@ -1,8 +1,9 @@
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+import { authConfig } from "@/lib/auth.config";
 import { getDashboardPath } from "@/lib/dashboard-path";
 
-export default auth((req) => {
+export default NextAuth(authConfig).auth((req) => {
   const { pathname, search } = req.nextUrl;
   const role = req.auth?.user?.role;
   const isLoggedIn = !!req.auth;
