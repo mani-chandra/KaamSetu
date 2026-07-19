@@ -54,6 +54,11 @@ const en = {
     trustedServicesDesc: "Book verified plumbers, electricians, tutors & more.",
     growBusiness: "Grow your business",
     growBusinessDesc: "Reach new customers across India with your digital profile.",
+    registerPromptTitle: "Ready to book trusted local pros?",
+    registerPromptDesc:
+      "Create a free account to book services, track jobs, save favourites, and get faster quotes.",
+    registerPromptCta: "Create free account",
+    registerPromptLater: "Maybe later",
   },
   book: {
     title: "Book",
@@ -521,6 +526,11 @@ const te: TranslationTree = {
     trustedServicesDesc: "ధృవీకరించబడిన ప్లంబర్లు, ఎలక్ట్రీషియన్లు, ట్యూటర్లు & మరిన్ని.",
     growBusiness: "మీ వ్యాపారాన్ని పెంచుకోండి",
     growBusinessDesc: "మీ డిజిటల్ ప్రొఫైల్‌తో భారతదేశం అంతటా కొత్త కస్టమర్లను చేరుకోండి.",
+    registerPromptTitle: "విశ్వసనీయ స్థానిక ప్రొఫెషనalsను బుక్ చేయడానికి సిద్ధంగా ఉన్నారా?",
+    registerPromptDesc:
+      "సేవలు బుక్ చేయడానికి, జాబ్లను ట్రాక్ చేయడానికి, favourites సేవ్ చేయడానికి మరియు వేగవంతమైన quotes పొందడానికి ఉచిత ఖాతా సృష్టించండి.",
+    registerPromptCta: "ఉచిత ఖాతా సృష్టించండి",
+    registerPromptLater: "తర్వాత చూద్దాం",
   },
   book: {
     title: "బుక్",
@@ -968,6 +978,11 @@ const hi: TranslationTree = {
     trustedServicesDesc: "सत्यापित प्लंबर, इलेक्ट्रीशियन, ट्यूटर और अधिक बुक करें।",
     growBusiness: "अपना व्यवसाय बढ़ाएँ",
     growBusinessDesc: "अपनी डिजिटल प्रोफ़ाइल से पूरे भारत में नए ग्राहक पाएँ।",
+    registerPromptTitle: "विश्वसनीय स्थानीय प्रोफेशनल बुक करने के लिए तैयार हैं?",
+    registerPromptDesc:
+      "सेवाएँ बुक करने, जॉब ट्रैक करने, पसंदीदा सेव करने और तेज़ कोट पाने के लिए मुफ़्त खाता बनाएँ।",
+    registerPromptCta: "मुफ़्त खाता बनाएँ",
+    registerPromptLater: "बाद में",
   },
   book: {
     title: "बुक करें",

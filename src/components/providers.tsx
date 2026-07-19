@@ -2,6 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
+import { RegisterPrompt } from "@/components/auth/register-prompt";
 import { OfflineListener } from "@/components/offline/offline-listener";
 import { I18nProvider } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/translations";
@@ -18,6 +19,7 @@ export function Providers({
       <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
         <I18nProvider initialLocale={initialLocale}>
           {children}
+          <RegisterPrompt />
           <OfflineListener />
         </I18nProvider>
       </NextThemesProvider>
