@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import { BookingStatusBadge } from "@/components/booking/status-badge";
 import { CustomerBookingStatusHint } from "@/components/booking/customer-booking-journey";
+import { getServerTranslations } from "@/lib/i18n/server";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 export default async function CustomerBookingsPage() {
@@ -24,6 +25,8 @@ export default async function CustomerBookingsPage() {
         orderBy: { createdAt: "desc" },
       })
     : [];
+
+  const t = await getServerTranslations();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -49,7 +52,10 @@ export default async function CustomerBookingsPage() {
                       serviceStartOtp={booking.serviceStartOtp}
                     />
                   </div>
-                  <BookingStatusBadge status={booking.status} />
+                  <BookingStatusBadge
+                    status={booking.status}
+                    label={t.bookingStatus[booking.status]}
+                  />
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
                   {booking.scheduledDate && (

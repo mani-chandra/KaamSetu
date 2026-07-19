@@ -15,7 +15,14 @@ const statusStyles: Record<BookingStatus, string> = {
   DISPUTED: "bg-red-100 text-red-800",
 };
 
-export function BookingStatusBadge({ status }: { status: BookingStatus }) {
+export function BookingStatusBadge({
+  status,
+  label,
+}: {
+  status: BookingStatus;
+  label?: string;
+}) {
   const { t } = useI18n();
-  return <Badge className={statusStyles[status]}>{t.bookingStatus[status]}</Badge>;
+  const text = label ?? t.bookingStatus[status];
+  return <Badge className={statusStyles[status]}>{text}</Badge>;
 }

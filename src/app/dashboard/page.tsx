@@ -1,9 +1,11 @@
 import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { CustomerDashboardHome } from "@/components/dashboard/customer-dashboard-home";
+import { getServerTranslations } from "@/lib/i18n/server";
 
 export default async function CustomerDashboardPage() {
   const session = await requireAuth(["CUSTOMER", "ADMIN"]);
+  const t = await getServerTranslations();
   const customer = await prisma.customerProfile.findUnique({
     where: { userId: session.user.id },
     include: {
@@ -30,7 +32,10 @@ export default async function CustomerDashboardPage() {
       activeCount={activeBookings.length}
       totalCount={customer?.bookings.length ?? 0}
       savedCount={customer?.savedProfessionals.length ?? 0}
-      bookings={customer?.bookings ?? []}
+      bookings={(customer?.bookings ?? []).map((booking) => ({
+        ...booking,
+        statusLabel: t.bookingStatus[booking.status],
+      }))}
     />
   );
 }

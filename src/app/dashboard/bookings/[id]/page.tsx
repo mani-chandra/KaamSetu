@@ -13,6 +13,8 @@ import { CustomerBookingActions } from "@/components/booking/customer-booking-ac
 import { MarketplaceQuoteCompare } from "@/components/booking/marketplace-actions";
 import { BookingChat } from "@/components/booking/booking-chat";
 import { isBookingChatEnabled } from "@/lib/booking-chat";
+import { buildTimelineItems } from "@/lib/booking-display";
+import { getServerTranslations } from "@/lib/i18n/server";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import Image from "next/image";
@@ -49,6 +51,9 @@ export default async function BookingDetailPage({
 
   if (!booking) notFound();
 
+  const t = await getServerTranslations();
+  const timelineItems = buildTimelineItems(booking.statusHistory, t.bookingStatus);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid lg:grid-cols-4 gap-8">
@@ -56,7 +61,7 @@ export default async function BookingDetailPage({
         <div className="lg:col-span-3 space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">{booking.title}</h1>
-            <BookingStatusBadge status={booking.status} />
+            <BookingStatusBadge status={booking.status} label={t.bookingStatus[booking.status]} />
           </div>
 
           {booking.isEmergency && (
@@ -128,7 +133,7 @@ export default async function BookingDetailPage({
             </CardContent>
           </Card>
 
-          <BookingTimeline history={booking.statusHistory} />
+          <BookingTimeline history={timelineItems} />
 
           <BookingChat
             bookingId={booking.id}

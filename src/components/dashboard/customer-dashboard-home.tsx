@@ -13,6 +13,7 @@ type BookingItem = {
   id: string;
   title: string;
   status: BookingStatus;
+  statusLabel?: string;
   serviceStartOtp?: string | null;
   professional: { user: { name: string | null; image?: string | null } } | null;
   category: { name: string };
@@ -102,7 +103,10 @@ export function CustomerDashboardHome({
                           serviceStartOtp={booking.serviceStartOtp}
                         />
                       </div>
-                      <BookingStatusBadge status={booking.status} />
+                      <BookingStatusBadge
+                        status={booking.status}
+                        label={booking.statusLabel}
+                      />
                     </Link>
                   ))}
                 </div>

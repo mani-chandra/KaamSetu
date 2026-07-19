@@ -3,11 +3,23 @@
 import { Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import type { Mesh } from "three";
 
 function ParticleField() {
   const particles = useRef<Mesh[]>([]);
+
+  const positions = useMemo<[number, number, number][]>(() => {
+    return Array.from({ length: 24 }, (_, i) => {
+      const angle = (i / 24) * Math.PI * 2;
+      const radius = 4 + (i % 5) * 1.2;
+      return [
+        Math.cos(angle) * radius,
+        Math.sin(angle * 0.7) * 3,
+        -4 - (i % 4) * 1.5,
+      ];
+    });
+  }, []);
 
   useFrame((state) => {
     particles.current.forEach((p, i) => {
@@ -17,15 +29,6 @@ function ParticleField() {
       }
     });
   });
-
-  const positions: [number, number, number][] = [];
-  for (let i = 0; i < 24; i++) {
-    positions.push([
-      (Math.random() - 0.5) * 20,
-      (Math.random() - 0.5) * 12,
-      (Math.random() - 0.5) * 8 - 4,
-    ]);
-  }
 
   return (
     <>

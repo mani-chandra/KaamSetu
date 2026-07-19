@@ -42,11 +42,12 @@ export function BookingChat({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollChatToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTo({ top: list.scrollHeight, behavior });
   }, []);
 
   const loadMessages = useCallback(async () => {
@@ -82,8 +83,9 @@ export function BookingChat({
   }, [enabled, loadMessages]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (loading || !enabled || messages.length === 0) return;
+    scrollChatToBottom("auto");
+  }, [loading, enabled, messages, scrollChatToBottom]);
 
   async function handleSend() {
     const trimmed = body.trim();
@@ -103,7 +105,11 @@ export function BookingChat({
         setError(data.error || t.bookingChat.sendError);
         return;
       }
-      setMessages((prev) => [...prev, data.message]);
+      setMessages((prev) => {
+        const next = [...prev, data.message];
+        requestAnimationFrame(() => scrollChatToBottom("smooth"));
+        return next;
+      });
       setBody("");
     } catch {
       setError(t.bookingChat.sendError);
@@ -156,7 +162,7 @@ export function BookingChat({
           <>
             <div
               ref={listRef}
-              className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-white/10 bg-slate-50/50 p-3 dark:bg-white/5"
+              className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3"
             >
               {loading ? (
                 <p className="text-sm text-muted-foreground">{t.common.loading}</p>
@@ -174,7 +180,7 @@ export function BookingChat({
                         className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
                           isMine
                             ? "bg-brand text-white rounded-br-md"
-                            : "bg-white dark:bg-slate-900 border border-white/10 rounded-bl-md"
+                            : "bg-card text-card-foreground border border-border rounded-bl-md"
                         }`}
                       >
                         {!isMine && (
@@ -195,7 +201,6 @@ export function BookingChat({
                   );
                 })
               )}
-              <div ref={bottomRef} />
             </div>
 
             <div className="flex gap-2">

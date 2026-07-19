@@ -106,7 +106,7 @@ export function MarketplaceQuoteForm({ bookingId }: { bookingId: string }) {
   if (done) return <p className="text-sm text-brand">Quote submitted!</p>;
 
   return (
-    <form onSubmit={submit} className="space-y-3 p-4 border rounded-lg">
+    <form onSubmit={submit} className="space-y-3 p-4 rounded-lg border border-border bg-muted/50 text-foreground">
       <p className="font-medium text-sm">Submit your quote</p>
       <Input type="number" placeholder="Amount (₹)" value={amount} onChange={(e) => setAmount(e.target.value)} required />
       <Input placeholder="Message (optional)" value={message} onChange={(e) => setMessage(e.target.value)} />

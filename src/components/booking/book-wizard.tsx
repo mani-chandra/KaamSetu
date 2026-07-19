@@ -34,7 +34,22 @@ type BookWizardProps = {
 
 export type { BookWizardProps };
 
-function getStepIds(flow: BookingFlow, mode: BookWizardProps["mode"], consultationMode: string): StepId[] {
+function repairNeedsDescribeStep(
+  issueKnown: "" | "yes" | "no",
+  commonIssue: string
+): boolean {
+  if (issueKnown === "no") return true;
+  if (issueKnown === "yes" && (!commonIssue || commonIssue === "Other")) return true;
+  return false;
+}
+
+function getStepIds(
+  flow: BookingFlow,
+  mode: BookWizardProps["mode"],
+  consultationMode: string,
+  issueKnown: "" | "yes" | "no",
+  commonIssue: string
+): StepId[] {
   if (mode === "emergency") return ["service", "schedule"];
   if (mode === "marketplace") return ["service", "describe", "address", "pro"];
 
@@ -45,8 +60,12 @@ function getStepIds(flow: BookingFlow, mode: BookWizardProps["mode"], consultati
   switch (flow) {
     case "instant":
       return ["service", "schedule", "address", "pro", "confirm"];
-    case "repair":
-      return ["service", "issue", "describe", "schedule", "address", "pro"];
+    case "repair": {
+      const steps: StepId[] = ["service", "issue"];
+      if (repairNeedsDescribeStep(issueKnown, commonIssue)) steps.push("describe");
+      steps.push("schedule", "address", "pro");
+      return steps;
+    }
     case "inspection":
       return ["service", "describe", "address", "schedule", "pro"];
     case "recurring":
@@ -73,6 +92,7 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
   const isServiceLocked = Boolean(preselectedCategorySlug || preselectedCategoryId);
 
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
   const [stepIndex, setStepIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -124,6 +144,9 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
           if (cat) setForm((f) => ({ ...f, categoryId: cat.id, categorySlug: cat.slug }));
         }
       });
+    fetch("/api/cities")
+      .then((r) => r.json())
+      .then((data) => setCities(data.cities || []));
   }, [preselectedCategorySlug, preselectedCategoryId]);
 
   const selectedCategoryName =
@@ -142,12 +165,16 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
   const consultationModes = flowConfig?.consultationModes ?? [];
 
   const steps = useMemo(
-    () => getStepIds(flow, mode, form.consultationMode),
-    [flow, mode, form.consultationMode]
+    () => getStepIds(flow, mode, form.consultationMode, form.issueKnown, form.commonIssue),
+    [flow, mode, form.consultationMode, form.issueKnown, form.commonIssue]
   );
   const currentStep = steps[stepIndex] ?? "service";
   const totalSteps = steps.length;
   const isLastStep = stepIndex === totalSteps - 1;
+
+  useEffect(() => {
+    setStepIndex((i) => Math.min(i, Math.max(steps.length - 1, 0)));
+  }, [steps.length]);
 
   const slotTime = flow === "recurring" ? form.preferredTime : form.scheduledTime;
   const slotDate = form.scheduledDate;
@@ -199,8 +226,18 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
       setError("Please select a service");
       return;
     }
-    if (currentStep === "issue" && !form.issueKnown) {
-      setError("Please indicate if you know the issue");
+    if (currentStep === "issue") {
+      if (!form.issueKnown) {
+        setError("Please indicate if you know the issue");
+        return;
+      }
+      if (form.issueKnown === "yes" && commonIssues.length > 0 && !form.commonIssue) {
+        setError("Please select the issue");
+        return;
+      }
+    }
+    if (currentStep === "describe" && flow === "repair" && !form.description.trim()) {
+      setError("Please describe the issue");
       return;
     }
     if (currentStep === "recurring" && !form.frequency) {
@@ -243,13 +280,30 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
     setLoading(true);
 
     const useOpenRequest = openRequest || (flow === "marketplace" && !selectedProId);
+    const categoryName =
+      categories.find((c) => c.id === form.categoryId)?.name ||
+      selectedCategoryName ||
+      "Service booking";
+    const resolvedDescription =
+      form.description.trim() ||
+      (form.commonIssue && form.commonIssue !== "Other" ? form.commonIssue : "") ||
+      undefined;
+    const resolvedTitle =
+      form.title.trim() ||
+      (flow === "repair"
+        ? form.commonIssue && form.commonIssue !== "Other" && form.commonIssue !== "Unknown issue"
+          ? `${categoryName} — ${form.commonIssue}`
+          : resolvedDescription
+            ? `${categoryName} — ${resolvedDescription.slice(0, 60)}`
+            : categoryName
+        : categoryName);
 
     const payload: Record<string, unknown> = {
       professionalId: useOpenRequest ? undefined : selectedProId || undefined,
       categoryId: form.categoryId,
       categorySlug: form.categorySlug,
-      title: form.title || categories.find((c) => c.id === form.categoryId)?.name || "Service booking",
-      description: form.description,
+      title: resolvedTitle,
+      description: resolvedDescription,
       scheduledDate: form.scheduledDate || undefined,
       scheduledTime: flow === "recurring" ? form.preferredTime : form.scheduledTime || undefined,
       address: form.address || undefined,
@@ -438,16 +492,30 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
                 </div>
                 {form.issueKnown === "yes" && commonIssues.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Common issues</Label>
-                    <Select value={form.commonIssue} onValueChange={(v) => setForm((f) => ({ ...f, commonIssue: v }))}>
+                    <Label>What is the issue?</Label>
+                    <Select
+                      value={form.commonIssue}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          commonIssue: v,
+                          description: v !== "Other" ? "" : f.description,
+                        }))
+                      }
+                    >
                       <SelectTrigger><SelectValue placeholder="Select issue" /></SelectTrigger>
                       <SelectContent>
                         {commonIssues.map((issue) => (
                           <SelectItem key={issue} value={issue}>{issue}</SelectItem>
                         ))}
-                        <SelectItem value="Other">Other / describe below</SelectItem>
+                        <SelectItem value="Other">Other — I&apos;ll describe it</SelectItem>
                       </SelectContent>
                     </Select>
+                    {form.commonIssue && form.commonIssue !== "Other" && (
+                      <p className="text-xs text-muted-foreground">
+                        We&apos;ll share this with your professional — no extra description needed.
+                      </p>
+                    )}
                   </div>
                 )}
               </>
@@ -456,14 +524,25 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
             {currentStep === "describe" && (
               <>
                 <div className="space-y-2">
-                  <Label>{t.book.description}</Label>
-                  <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} required />
+                  <Label>
+                    {flow === "repair" && form.issueKnown === "no"
+                      ? "Describe what you're experiencing"
+                      : t.book.description}
+                  </Label>
+                  <Textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    rows={3}
+                    required={flow === "repair"}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t.book.issuePhoto}</Label>
-                  <p className="text-xs text-muted-foreground">{t.book.issuePhotoOptional}</p>
-                  <MediaUpload photoUrls={photoUrls} videoUrls={videoUrls} onPhotosChange={setPhotoUrls} onVideosChange={setVideoUrls} />
-                </div>
+                {(flow !== "repair" || form.issueKnown === "no" || form.commonIssue === "Other") && (
+                  <div className="space-y-2">
+                    <Label>{t.book.issuePhoto}</Label>
+                    <p className="text-xs text-muted-foreground">{t.book.issuePhotoOptional}</p>
+                    <MediaUpload photoUrls={photoUrls} videoUrls={videoUrls} onPhotosChange={setPhotoUrls} onVideosChange={setVideoUrls} />
+                  </div>
+                )}
                 {flow === "marketplace" && (
                   <>
                     <div className="space-y-2">
@@ -527,7 +606,14 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
                     </div>
                     <div className="space-y-2">
                       <Label>{t.auth.city}</Label>
-                      <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
+                      <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })}>
+                        <SelectTrigger><SelectValue placeholder={t.auth.city} /></SelectTrigger>
+                        <SelectContent>
+                          {cities.map((city) => (
+                            <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </>
                 )}
@@ -542,18 +628,19 @@ export function BookWizard({ mode = "standard" }: BookWizardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>{t.auth.city}</Label>
-                  <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
+                  <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })}>
+                    <SelectTrigger><SelectValue placeholder={t.auth.city} /></SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 {flow === "instant" && (
                   <div className="space-y-2">
                     <Label>Special instructions (optional)</Label>
                     <Textarea value={form.specialInstructions} onChange={(e) => setForm({ ...form, specialInstructions: e.target.value })} rows={2} />
-                  </div>
-                )}
-                {flow === "repair" && (
-                  <div className="space-y-2">
-                    <Label>{t.book.jobTitle}</Label>
-                    <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t.book.jobTitlePlaceholder} required />
                   </div>
                 )}
               </>

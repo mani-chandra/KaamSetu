@@ -24,7 +24,10 @@ export function QuoteForm({ bookingId }: { bookingId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-slate-50 rounded-lg space-y-3">
+    <form
+      onSubmit={handleSubmit}
+      className="p-4 rounded-lg border border-border bg-muted/50 space-y-3 text-foreground"
+    >
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Quote Amount (₹)</Label>

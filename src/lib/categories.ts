@@ -14,6 +14,7 @@ export async function getCategoryGroups() {
           slug: true,
           description: true,
           icon: true,
+          imageUrl: true,
           metadata: true,
         },
       },
