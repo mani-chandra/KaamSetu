@@ -1,5 +1,6 @@
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import crypto from "crypto";
 
 export const UPLOAD_MAX_SIZE = 25 * 1024 * 1024;
 
@@ -60,13 +61,65 @@ async function saveLocal(
   }
 }
 
+function cloudinarySignature(params: Record<string, string | number>, apiSecret: string) {
+  const payload = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join("&");
+  return crypto.createHash("sha1").update(payload + apiSecret).digest("hex");
+}
+
+async function saveToCloudinarySigned(
+  file: File,
+  folder: string,
+  mime: string,
+  cloudName: string,
+  apiKey: string,
+  apiSecret: string
+): Promise<{ url: string; error?: string } | null> {
+  try {
+    const resourceType = isVideoMime(mime) ? "video" : mime === "application/pdf" ? "raw" : "image";
+    const timestamp = Math.floor(Date.now() / 1000);
+    const cloudFolder = `kaamsetu/${folder}`;
+    const signature = cloudinarySignature({ folder: cloudFolder, timestamp }, apiSecret);
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("api_key", apiKey);
+    form.append("timestamp", String(timestamp));
+    form.append("signature", signature);
+    form.append("folder", cloudFolder);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+      { method: "POST", body: form }
+    );
+
+    const data = (await res.json()) as { secure_url?: string; error?: { message?: string } };
+    if (res.ok && data.secure_url) {
+      return { url: data.secure_url };
+    }
+    console.error("Cloudinary signed upload failed:", data.error?.message || res.status);
+    return { url: "", error: data.error?.message || "Cloudinary upload failed" };
+  } catch (err) {
+    console.error("Cloudinary signed upload error:", err);
+    return { url: "", error: "Cloudinary upload failed" };
+  }
+}
+
 async function saveToCloudinary(
   file: File,
   folder: string,
   mime: string
 ): Promise<{ url: string; error?: string } | null> {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
   const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
+
+  if (cloudName && apiKey && apiSecret) {
+    return saveToCloudinarySigned(file, folder, mime, cloudName, apiKey, apiSecret);
+  }
 
   if (!cloudName || !uploadPreset) return null;
 

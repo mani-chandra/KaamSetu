@@ -33,8 +33,10 @@ Import the repo at [vercel.com/new](https://vercel.com/new) and set **before the
 | `RAZORPAY_KEY_SECRET` | Yes (prod) | From Razorpay dashboard |
 | `RESEND_API_KEY` | Recommended | Transactional email |
 | `EMAIL_FROM` | Recommended | Verified sender, e.g. `KaamSetu <noreply@yourdomain.com>` |
-| `CLOUDINARY_CLOUD_NAME` | Yes (prod) | Vercel filesystem is ephemeral — uploads need Cloudinary |
-| `CLOUDINARY_UPLOAD_PRESET` | Yes (prod) | Unsigned upload preset |
+| `CLOUDINARY_CLOUD_NAME` | Yes (prod) | From Cloudinary dashboard |
+| `CLOUDINARY_API_KEY` | Yes (prod) | From Cloudinary dashboard — used for signed server uploads |
+| `CLOUDINARY_API_SECRET` | Yes (prod) | From Cloudinary dashboard — **server only, never expose to browser** |
+| `CLOUDINARY_UPLOAD_PRESET` | Optional | Unsigned preset fallback if API secret is not configured |
 | `MSG91_API_KEY` | Optional | SMS notifications |
 | `MSG91_SENDER_ID` | Optional | SMS sender |
 | `MSG91_TEMPLATE_ID` | Optional | SMS template |
