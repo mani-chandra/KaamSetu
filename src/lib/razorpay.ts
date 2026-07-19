@@ -6,6 +6,11 @@ export function getRazorpayConfig() {
   };
 }
 
+/** Demo checkout is allowed only outside production. */
+export function isDemoPaymentsAllowed() {
+  return process.env.NODE_ENV !== "production";
+}
+
 export function generateInvoiceNumber() {
   const date = new Date();
   const prefix = "KS";
@@ -19,6 +24,9 @@ export function generateInvoiceNumber() {
 export async function createRazorpayOrder(amount: number, receipt: string) {
   const config = getRazorpayConfig();
   if (!config.enabled) {
+    if (!isDemoPaymentsAllowed()) {
+      throw new Error("Payment gateway not configured");
+    }
     return { id: `order_demo_${Date.now()}`, amount: amount * 100, currency: "INR" };
   }
 

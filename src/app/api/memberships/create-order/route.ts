@@ -23,7 +23,12 @@ export async function POST(req: Request) {
   }
 
   const config = getRazorpayConfig();
-  const order = await createRazorpayOrder(plan.price, `membership_${planId}_${session.user.id}`);
+  let order;
+  try {
+    order = await createRazorpayOrder(plan.price, `membership_${planId}_${session.user.id}`);
+  } catch {
+    return NextResponse.json({ error: "Payment gateway unavailable" }, { status: 503 });
+  }
 
   return NextResponse.json({
     order,

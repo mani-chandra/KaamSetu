@@ -5,7 +5,7 @@ India's trusted platform for local services — connecting customers with verifi
 ## Tech Stack
 
 - **Next.js 15** (App Router) + TypeScript
-- **SQLite** (local dev) / **PostgreSQL** (production) + Prisma ORM
+- **PostgreSQL** (local via Docker / production via Neon or Supabase) + Prisma ORM
 - **NextAuth.js v5** (role-based auth: Customer, Professional, Admin)
 - **Tailwind CSS** + shadcn/ui components
 - **Razorpay** (payments — real checkout when keys are set)
@@ -22,6 +22,7 @@ India's trusted platform for local services — connecting customers with verifi
 ```bash
 npm install
 cp .env.example .env
+docker compose up -d
 npm run db:push
 npm run db:seed
 npm run dev
@@ -44,9 +45,9 @@ See **[DEPLOY.md](./DEPLOY.md)** for the full step-by-step guide.
 Quick summary:
 
 1. Create PostgreSQL (Neon/Supabase/Docker)
-2. Set `provider = "postgresql"` in `prisma/schema.prisma`
-3. Run `npm run db:push && npm run db:seed`
-4. Deploy to Vercel with env vars (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, etc.)
+2. Set Vercel env vars (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, Razorpay, Cloudinary, Resend)
+3. Run `npm run db:push && npm run db:seed` against prod DB
+4. Deploy to Vercel
 5. Merge PR to `main`
 
 ## Launch-Ready MVP Features

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { getRazorpayConfig } from "@/lib/razorpay";
+import { getRazorpayConfig, isDemoPaymentsAllowed } from "@/lib/razorpay";
 
 export function verifyRazorpaySignature(
   orderId: string,
@@ -7,7 +7,9 @@ export function verifyRazorpaySignature(
   signature: string
 ) {
   const config = getRazorpayConfig();
-  if (!config.enabled) return true;
+  if (!config.enabled) {
+    return isDemoPaymentsAllowed();
+  }
 
   const body = `${orderId}|${paymentId}`;
   const expected = crypto

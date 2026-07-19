@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { verifyRazorpaySignature } from "@/lib/razorpay-verify";
+import { getRazorpayConfig, isDemoPaymentsAllowed } from "@/lib/razorpay";
 import { notifyBookingEvent } from "@/lib/notifications";
 
 export async function POST(req: Request) {
@@ -37,7 +38,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (razorpaySignature) {
+  const config = getRazorpayConfig();
+  const demoAllowed = isDemoPaymentsAllowed() && !config.enabled;
+
+  if (!demoAllowed) {
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return NextResponse.json({ error: "Invalid payment" }, { status: 400 });
+    }
     const valid = verifyRazorpaySignature(
       razorpayOrderId,
       razorpayPaymentId,

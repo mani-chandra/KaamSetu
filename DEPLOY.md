@@ -1,26 +1,47 @@
 # Deploying KaamSetu to Production
 
-## 1. PostgreSQL database
+Follow this order for a safe launch.
 
-Create a database on [Neon](https://neon.tech), [Supabase](https://supabase.com), or run locally:
+## Launch order
+
+### Step 1 — Code on `main`
+
+- Merge `cursor/kaamsetu-platform-blueprint` into `main` after review.
+- Ensure the latest branch includes the registration prompt and PostgreSQL schema.
+
+### Step 2 — PostgreSQL database
+
+Create a database on [Neon](https://neon.tech), [Supabase](https://supabase.com), or run locally with Docker:
 
 ```bash
 docker compose up -d
 # DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kaamsetu
 ```
 
-## 2. Switch Prisma to PostgreSQL
+Copy the connection string for the next steps.
 
-In `prisma/schema.prisma`, change the datasource:
+### Step 3 — Vercel environment variables
 
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-```
+Import the repo at [vercel.com/new](https://vercel.com/new) and set:
 
-Push schema and seed (run once from your machine or CI):
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `AUTH_SECRET` | Yes | Random 32+ character secret |
+| `AUTH_URL` | Yes | `https://your-domain.vercel.app` |
+| `RAZORPAY_KEY_ID` | Yes (prod) | From Razorpay dashboard — demo payments are **disabled** in production without keys |
+| `RAZORPAY_KEY_SECRET` | Yes (prod) | From Razorpay dashboard |
+| `RESEND_API_KEY` | Recommended | Transactional email |
+| `EMAIL_FROM` | Recommended | Verified sender, e.g. `KaamSetu <noreply@yourdomain.com>` |
+| `CLOUDINARY_CLOUD_NAME` | Yes (prod) | Vercel filesystem is ephemeral — uploads need Cloudinary |
+| `CLOUDINARY_UPLOAD_PRESET` | Yes (prod) | Unsigned upload preset |
+| `MSG91_API_KEY` | Optional | SMS notifications |
+| `MSG91_SENDER_ID` | Optional | SMS sender |
+| `MSG91_TEMPLATE_ID` | Optional | SMS template |
+
+### Step 4 — Database setup (run once)
+
+From your machine with `DATABASE_URL` pointing at the **production** database:
 
 ```bash
 export DATABASE_URL="postgresql://..."
@@ -28,42 +49,65 @@ npm run db:push
 npm run db:seed
 ```
 
-> Switch back to `provider = "sqlite"` for local file-based dev if preferred.
+> **Security:** Change the seeded admin password immediately after first login. Demo accounts (`customer@demo.com`, `pro@demo.com`) are for testing only — disable or remove before public launch if desired.
 
-## 3. Deploy on Vercel
+### Step 5 — Deploy
 
-1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new)
-2. Set environment variables:
+Vercel runs `npm run vercel-build` (see `vercel.json`).
 
-| Variable | Value |
-|----------|-------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | Random 32+ char secret |
-| `AUTH_URL` | `https://your-domain.vercel.app` |
-| `RAZORPAY_KEY_ID` | From Razorpay dashboard |
-| `RAZORPAY_KEY_SECRET` | From Razorpay dashboard |
-| `RESEND_API_KEY` | From resend.com |
-| `EMAIL_FROM` | Verified sender |
+After deploy, confirm:
 
-3. Deploy — `vercel.json` runs `npm run vercel-build`
-
-## 4. File uploads on Vercel
-
-Local uploads (`/public/uploads`) are ephemeral on serverless. For production, configure Cloudinary env vars or migrate to S3/R2.
-
-## 5. Post-deploy checklist
-
-- [ ] Admin login works (`admin@kaamsetu.com` after seed)
-- [ ] Pro registration with document upload
+- [ ] Home page loads (cinematic journey + stream layout)
+- [ ] Guest registration prompt appears for logged-out users
+- [ ] Register / login works
+- [ ] Pro registration with document upload (Cloudinary)
 - [ ] Booking respects pro availability
-- [ ] Razorpay test payment
+- [ ] Razorpay test payment completes
 - [ ] Email notifications (Resend)
-- [ ] Terms & Privacy pages load at `/terms` and `/privacy`
+- [ ] Terms & Privacy at `/terms` and `/privacy`
+- [ ] Admin login works
 
-## 6. Merge to main
+### Step 6 — Merge to main & go live
 
 ```bash
 gh pr create --base main --head cursor/kaamsetu-platform-blueprint
 ```
 
-Review and merge when CI/build passes.
+Review, merge, and point your custom domain in Vercel when ready.
+
+---
+
+## Local development (PostgreSQL)
+
+Prisma is configured for PostgreSQL. Use Docker for a local database:
+
+```bash
+docker compose up -d
+cp .env.example .env
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kaamsetu
+npm run db:push
+npm run db:seed
+npm run dev
+```
+
+### Legacy SQLite (optional)
+
+To use SQLite locally again, change `provider = "sqlite"` in `prisma/schema.prisma` and set `DATABASE_URL="file:./dev.db"`.
+
+---
+
+## File uploads on Vercel
+
+Local uploads (`/public/uploads`) are ephemeral on serverless. Configure Cloudinary env vars before production launch.
+
+---
+
+## Demo accounts (after seed)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@kaamsetu.com | admin123 |
+| Customer | customer@demo.com | customer123 |
+| Professional | pro@demo.com | pro123 |
+
+Rotate these credentials before a public launch.

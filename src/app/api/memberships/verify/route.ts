@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBookingEvent } from "@/lib/notifications";
 import { verifyRazorpaySignature } from "@/lib/razorpay-verify";
+import { getRazorpayConfig, isDemoPaymentsAllowed } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -18,9 +19,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Plan not found" }, { status: 404 });
   }
 
-  const valid = verifyRazorpaySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
-  if (!valid && process.env.RAZORPAY_KEY_SECRET) {
-    return NextResponse.json({ error: "Invalid payment signature" }, { status: 400 });
+  const config = getRazorpayConfig();
+  const demoAllowed = isDemoPaymentsAllowed() && !config.enabled;
+
+  if (!demoAllowed) {
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return NextResponse.json({ error: "Invalid payment" }, { status: 400 });
+    }
+    const valid = verifyRazorpaySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
+    if (!valid) {
+      return NextResponse.json({ error: "Invalid payment signature" }, { status: 400 });
+    }
   }
 
   const subscription = await prisma.subscription.create({

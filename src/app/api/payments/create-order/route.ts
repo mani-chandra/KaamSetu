@@ -32,7 +32,12 @@ export async function POST(req: Request) {
   }
 
   const config = getRazorpayConfig();
-  const order = await createRazorpayOrder(booking.amount, booking.id);
+  let order;
+  try {
+    order = await createRazorpayOrder(booking.amount, booking.id);
+  } catch {
+    return NextResponse.json({ error: "Payment gateway unavailable" }, { status: 503 });
+  }
   const invoiceNumber = generateInvoiceNumber();
 
   await prisma.payment.upsert({
