@@ -12,7 +12,7 @@ export default async function ProDashboardPage() {
     where: { userId: session.user.id },
     include: {
       bookings: {
-        include: { customer: { include: { user: true } }, category: true },
+        include: { customer: { include: { user: { select: { name: true } } } } },
         orderBy: { createdAt: "desc" },
         take: 5,
       },
@@ -42,7 +42,12 @@ export default async function ProDashboardPage() {
       completedJobs={pro.completedJobs}
       avgRating={pro.avgRating}
       totalEarnings={earnings._sum.amount ?? 0}
-      bookings={pro.bookings}
+      bookings={pro.bookings.map((booking) => ({
+        id: booking.id,
+        title: booking.title,
+        status: booking.status,
+        customer: { user: { name: booking.customer.user.name } },
+      }))}
     />
   );
 }

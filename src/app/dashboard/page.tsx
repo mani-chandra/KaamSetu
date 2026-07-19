@@ -33,8 +33,20 @@ export default async function CustomerDashboardPage() {
       totalCount={customer?.bookings.length ?? 0}
       savedCount={customer?.savedProfessionals.length ?? 0}
       bookings={(customer?.bookings ?? []).map((booking) => ({
-        ...booking,
+        id: booking.id,
+        title: booking.title,
+        status: booking.status,
         statusLabel: t.bookingStatus[booking.status],
+        serviceStartOtp: booking.serviceStartOtp,
+        professional: booking.professional
+          ? {
+              user: {
+                name: booking.professional.user.name,
+                image: booking.professional.user.image,
+              },
+            }
+          : null,
+        category: { name: booking.category.name },
       }))}
     />
   );
