@@ -37,9 +37,23 @@ export default NextAuth(authConfig).auth((req) => {
     }
   }
 
+  if (pathname.startsWith("/account")) {
+    if (!isLoggedIn) {
+      const loginUrl = new URL("/auth/login", req.url);
+      loginUrl.searchParams.set("callbackUrl", `${pathname}${search}`);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/book/:path*", "/dashboard/:path*", "/pro/dashboard/:path*", "/admin/:path*"],
+  matcher: [
+    "/book/:path*",
+    "/dashboard/:path*",
+    "/pro/dashboard/:path*",
+    "/admin/:path*",
+    "/account/:path*",
+  ],
 };

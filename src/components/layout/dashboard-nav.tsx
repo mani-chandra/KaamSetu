@@ -12,6 +12,7 @@ export function DashboardNav() {
     { href: "/dashboard/payments", label: t.dashboard.payments },
     { href: "/dashboard/notifications", label: t.dashboard.notifications },
     { href: "/dashboard/support", label: t.dashboard.support },
+    { href: "/account/settings", label: t.account.settings },
   ];
 
   return (
@@ -39,6 +40,7 @@ export function ProDashboardNav() {
     { href: "/pro/dashboard/earnings", label: t.dashboard.earnings },
     { href: "/pro/dashboard/reviews", label: t.dashboard.reviews },
     { href: "/dashboard/notifications", label: t.dashboard.notifications },
+    { href: "/account/settings", label: t.account.settings },
   ];
 
   return (
@@ -72,6 +74,7 @@ export function AdminNav() {
     { href: "/admin/disputes", label: t.dashboard.disputes },
     { href: "/admin/banners", label: t.dashboard.banners },
     { href: "/admin/reports", label: t.dashboard.reports },
+    { href: "/account/settings", label: t.account.settings },
   ];
 
   return (

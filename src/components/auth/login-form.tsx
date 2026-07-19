@@ -18,6 +18,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const callbackUrl = searchParams.get("callbackUrl");
+  const resetSuccess = searchParams.get("reset") === "success";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -77,6 +78,9 @@ export function LoginForm() {
             <div className="mb-8">
               <h1 className="text-2xl font-bold mb-2">{t.auth.welcomeBack}</h1>
               <p className="text-sm text-muted-foreground">{t.auth.signInSubtitle}</p>
+              {resetSuccess && (
+                <p className="text-sm text-brand mt-3">{t.auth.passwordResetSuccess}</p>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -91,7 +95,12 @@ export function LoginForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t.auth.password}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">{t.auth.password}</Label>
+                  <Link href="/auth/forgot-password" className="text-xs text-brand hover:underline">
+                    {t.auth.forgotPassword}
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   name="password"
