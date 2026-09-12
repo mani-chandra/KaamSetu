@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getRequestSession } from "@/lib/request-auth";
 import { prisma } from "@/lib/prisma";
 import { markAllAsRead } from "@/lib/notifications";
 
-export async function GET() {
-  const session = await auth();
+export async function GET(req: Request) {
+  const session = await getRequestSession(req);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -22,8 +22,8 @@ export async function GET() {
   return NextResponse.json({ notifications, unreadCount });
 }
 
-export async function PATCH() {
-  const session = await auth();
+export async function PATCH(req: Request) {
+  const session = await getRequestSession(req);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

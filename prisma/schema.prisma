@@ -124,7 +124,8 @@ model User {
   email         String    @unique
   passwordHash  String?
   name          String?
-  phone         String?
+  phone         String?   @unique
+  phoneVerified DateTime?
   role          UserRole  @default(CUSTOMER)
   emailVerified DateTime?
   image         String?
@@ -192,6 +193,30 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model OtpChallenge {
+  id          String    @id @default(cuid())
+  phone       String
+  otpHash     String
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model PhoneVerification {
+  id         String    @id @default(cuid())
+  phone      String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone])
 }
 
 model CustomerProfile {

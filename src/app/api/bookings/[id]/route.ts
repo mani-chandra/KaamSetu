@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getRequestSession } from "@/lib/request-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBookingEvent } from "@/lib/notifications";
 import { generateServiceOtp, getServiceOtpExpiry } from "@/lib/booking-service";
@@ -43,8 +43,47 @@ function getNotificationForStatus(status: BookingStatus, title: string) {
   }
 }
 
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getRequestSession(req);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    include: {
+      customer: { include: { user: true } },
+      professional: { include: { user: true } },
+      category: true,
+      payment: true,
+      review: true,
+      marketplaceQuotes: { include: { professional: { include: { user: true } } } },
+      recurringSchedule: true,
+      statusHistory: { orderBy: { createdAt: "desc" } },
+    },
+  });
+
+  if (!booking) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const isCustomer =
+    session.user.role === "CUSTOMER" && booking.customer.userId === session.user.id;
+  const isPro =
+    session.user.role === "PROFESSIONAL" &&
+    booking.professional?.userId === session.user.id;
+  const isAdmin = session.user.role === "ADMIN";
+
+  if (!isCustomer && !isPro && !isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return NextResponse.json({ booking });
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
+  const session = await getRequestSession(req);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

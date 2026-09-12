@@ -4,12 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { createNotification } from "@/lib/notifications";
 import { validateProSelections, mergeSkillsWithServices } from "@/lib/pro-options";
+import { consumePhoneVerification, isPhoneRegistered } from "@/lib/phone-verification";
 
 const schema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  phone: z.string().optional(),
+  phone: z.string().min(10),
+  verificationToken: z.string().min(1),
   city: z.string().optional(),
   bio: z.string().optional(),
   experienceYears: z.number().int().min(0).default(0),
@@ -30,6 +32,15 @@ export async function POST(req: Request) {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+    }
+
+    const verification = await consumePhoneVerification(data.phone, data.verificationToken);
+    if (!verification.success) {
+      return NextResponse.json({ error: "verifyPhoneFirst" }, { status: 400 });
+    }
+
+    if (await isPhoneRegistered(verification.phone)) {
+      return NextResponse.json({ error: "Phone already registered" }, { status: 400 });
     }
 
     const categories = data.categoryIds.length
@@ -60,7 +71,8 @@ export async function POST(req: Request) {
         name: data.name,
         email: data.email,
         passwordHash,
-        phone: data.phone,
+        phone: verification.phone,
+        phoneVerified: new Date(),
         city: data.city,
         image: data.profilePhotoUrl,
         role: "PROFESSIONAL",
