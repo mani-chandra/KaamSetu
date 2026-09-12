@@ -1,17 +1,20 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import Colors from "@/constants/Colors";
+import { radii, shadows, spacing, typography } from "@/constants/theme";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -36,100 +39,150 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.content}>
-        <Text style={styles.logo}>KaamSetu</Text>
-        <Text style={styles.subtitle}>Book trusted local professionals</Text>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={[Colors.light.gradientStart, Colors.light.gradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.hero}
+      >
+        <SafeAreaView edges={["top"]}>
+          <View style={styles.heroContent}>
+            <View style={styles.logoMark}>
+              <Text style={styles.logoLetter}>K</Text>
+            </View>
+            <Text style={styles.logo}>KaamSetu</Text>
+            <Text style={styles.tagline}>Trusted pros, on demand</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+      <KeyboardAvoidingView
+        style={styles.formArea}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.formScroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Welcome back</Text>
+            <Text style={styles.cardSubtitle}>Sign in to book and track your services</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+            <Input
+              label="Email"
+              placeholder="you@example.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <Input
+              label="Password"
+              placeholder="Enter your password"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              error={error ?? undefined}
+            />
 
-        <Text style={styles.hint}>Demo: customer@demo.com / customer123</Text>
+            <View style={styles.demoPill}>
+              <Text style={styles.demoLabel}>Demo account</Text>
+              <Text style={styles.demoText}>customer@demo.com · customer123</Text>
+            </View>
 
-        <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
-          )}
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+            <Button label="Sign in" onPress={handleLogin} loading={loading} />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: Colors.light.background,
   },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
+  hero: {
+    paddingBottom: spacing.xxxl,
   },
-  logo: {
+  heroContent: {
+    alignItems: "center",
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.xxl,
+  },
+  logoMark: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.xl,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.35)",
+  },
+  logoLetter: {
     fontSize: 32,
     fontWeight: "800",
-    color: Colors.light.brand,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.light.muted,
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 32,
-  },
-  input: {
-    backgroundColor: Colors.light.card,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
-    fontSize: 16,
-  },
-  error: {
-    color: "#ef4444",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  hint: {
-    fontSize: 12,
-    color: Colors.light.muted,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: Colors.light.brand,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
+  },
+  logo: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    ...typography.subtitle,
+    color: "rgba(255,255,255,0.9)",
+    marginTop: spacing.sm,
+  },
+  formArea: {
+    flex: 1,
+    marginTop: -spacing.xxxl,
+  },
+  formScroll: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  card: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+  },
+  cardTitle: {
+    ...typography.title,
+    color: Colors.light.text,
+    marginBottom: spacing.xs,
+  },
+  cardSubtitle: {
+    ...typography.body,
+    color: Colors.light.muted,
+    marginBottom: spacing.xl,
+  },
+  demoPill: {
+    backgroundColor: Colors.light.brandSoft,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.light.brandMuted,
+  },
+  demoLabel: {
+    ...typography.label,
+    color: Colors.light.brandDark,
+    marginBottom: 2,
+  },
+  demoText: {
+    ...typography.caption,
+    color: Colors.light.textSecondary,
   },
 });

@@ -1,16 +1,12 @@
-import { Link, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Screen } from "@/components/ui/Screen";
 import Colors from "@/constants/Colors";
+import { radii, shadows, spacing, typography } from "@/constants/theme";
 import { api } from "@/lib/api";
 import type { Professional } from "@/lib/types";
 
@@ -31,150 +27,183 @@ export default function ProfessionalScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) {
+  if (!loading && !professional) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.light.brand} />
-      </View>
+      <Screen scroll={false}>
+        <EmptyState
+          icon="😕"
+          title="Professional not found"
+          description="This profile may have been removed or is no longer available."
+        />
+      </Screen>
     );
   }
 
-  if (!professional) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.empty}>Professional not found</Text>
-      </View>
-    );
-  }
-
-  const categorySlug = professional.services[0]?.category?.slug ?? "general";
+  const categorySlug = professional?.services[0]?.category?.slug ?? "general";
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        {professional.user.image ? (
-          <Image source={{ uri: professional.user.image }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Text style={styles.avatarText}>{professional.user.name?.[0] ?? "P"}</Text>
+    <Screen loading={loading}>
+      {professional ? (
+        <>
+          <View style={styles.heroCard}>
+            {professional.user.image ? (
+              <Image source={{ uri: professional.user.image }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text style={styles.avatarText}>{professional.user.name?.[0] ?? "P"}</Text>
+              </View>
+            )}
+            <Text style={styles.name}>{professional.user.name}</Text>
+            <View style={styles.ratingRow}>
+              <View style={styles.ratingBadge}>
+                <Text style={styles.ratingStar}>★</Text>
+                <Text style={styles.ratingValue}>{professional.avgRating.toFixed(1)}</Text>
+              </View>
+              <Text style={styles.reviewCount}>{professional.reviewCount} reviews</Text>
+            </View>
+            {professional.user.city ? (
+              <Text style={styles.city}>📍 {professional.user.city}</Text>
+            ) : null}
           </View>
-        )}
-        <View style={styles.headerText}>
-          <Text style={styles.name}>{professional.user.name}</Text>
-          <Text style={styles.rating}>
-            ★ {professional.avgRating.toFixed(1)} · {professional.reviewCount} reviews
-          </Text>
-          {professional.user.city ? (
-            <Text style={styles.city}>{professional.user.city}</Text>
+
+          {professional.bio ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.bio}>{professional.bio}</Text>
+            </View>
           ) : null}
-        </View>
-      </View>
 
-      {professional.bio ? <Text style={styles.bio}>{professional.bio}</Text> : null}
+          <View style={styles.statsGrid}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{professional.experienceYears}</Text>
+              <Text style={styles.statLabel}>Years experience</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{professional.completedJobs}</Text>
+              <Text style={styles.statLabel}>Jobs completed</Text>
+            </View>
+          </View>
 
-      <View style={styles.stats}>
-        <Text style={styles.stat}>{professional.experienceYears} years experience</Text>
-        <Text style={styles.stat}>{professional.completedJobs} jobs completed</Text>
-      </View>
-
-      <Link
-        href={{
-          pathname: "/book/[categorySlug]",
-          params: { categorySlug, proId: professional.id },
-        }}
-        asChild
-      >
-        <Pressable style={styles.button}>
-          <Text style={styles.buttonText}>Book this professional</Text>
-        </Pressable>
-      </Link>
-    </ScrollView>
+          <Button
+            label="Book this professional"
+            onPress={() =>
+              router.push({
+                pathname: "/book/[categorySlug]",
+                params: { categorySlug, proId: professional.id },
+              })
+            }
+          />
+        </>
+      ) : null}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  center: {
-    flex: 1,
+  heroCard: {
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.light.background,
-  },
-  empty: {
-    color: Colors.light.muted,
-  },
-  header: {
-    flexDirection: "row",
-    gap: 14,
-    marginBottom: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
+    marginBottom: spacing.lg,
+    ...shadows.md,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 88,
+    height: 88,
+    borderRadius: radii.full,
+    marginBottom: spacing.md,
   },
   avatarFallback: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#ccfbf1",
+    width: 88,
+    height: 88,
+    borderRadius: radii.full,
+    backgroundColor: Colors.light.brandMuted,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: spacing.md,
   },
   avatarText: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: Colors.light.brand,
-  },
-  headerText: {
-    flex: 1,
-    justifyContent: "center",
+    fontSize: 32,
+    fontWeight: "800",
+    color: Colors.light.brandDark,
   },
   name: {
-    fontSize: 22,
-    fontWeight: "800",
+    ...typography.hero,
+    fontSize: 24,
     color: Colors.light.text,
+    textAlign: "center",
   },
-  rating: {
-    fontSize: 14,
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fef3c7",
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  ratingStar: {
+    color: "#d97706",
+  },
+  ratingValue: {
+    fontWeight: "700",
+    color: "#92400e",
+  },
+  reviewCount: {
+    ...typography.caption,
     color: Colors.light.muted,
-    marginTop: 4,
   },
   city: {
-    fontSize: 14,
+    ...typography.body,
     color: Colors.light.muted,
-    marginTop: 2,
+    marginTop: spacing.sm,
+  },
+  section: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    ...typography.subtitle,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: spacing.sm,
   },
   bio: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: Colors.light.text,
-    marginBottom: 16,
+    ...typography.body,
+    color: Colors.light.textSecondary,
+    lineHeight: 24,
   },
-  stats: {
-    gap: 6,
-    marginBottom: 20,
+  statsGrid: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  stat: {
-    fontSize: 14,
-    color: Colors.light.muted,
-  },
-  button: {
-    backgroundColor: Colors.light.brand,
-    borderRadius: 10,
-    paddingVertical: 14,
+  statBox: {
+    flex: 1,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
+  statValue: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: Colors.light.brand,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: Colors.light.muted,
+    textAlign: "center",
+    marginTop: 4,
   },
 });

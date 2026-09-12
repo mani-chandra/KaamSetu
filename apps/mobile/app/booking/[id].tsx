@@ -1,17 +1,35 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Screen } from "@/components/ui/Screen";
 import Colors from "@/constants/Colors";
+import { radii, spacing, typography } from "@/constants/theme";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Booking } from "@/lib/types";
+import type { Booking, BookingStatus } from "@/lib/types";
+
+const STATUS_COLORS: Record<BookingStatus, string> = {
+  REQUESTED: "#b45309",
+  CONFIRMED: "#1d4ed8",
+  EN_ROUTE: "#6d28d9",
+  IN_PROGRESS: "#0f766e",
+  COMPLETED: "#15803d",
+  CANCELLED: "#b91c1c",
+};
+
+function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.rowIcon}>{icon}</Text>
+      <View style={styles.rowContent}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowValue}>{value}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,89 +49,144 @@ export default function BookingDetailScreen() {
       .finally(() => setLoading(false));
   }, [token, id]);
 
-  if (loading) {
+  if (!loading && !booking) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.light.brand} />
-      </View>
+      <Screen scroll={false}>
+        <EmptyState icon="📋" title="Booking not found" description="This booking may have been removed." />
+      </Screen>
     );
   }
 
-  if (!booking) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.empty}>Booking not found</Text>
-      </View>
-    );
-  }
+  const statusColor = booking ? (STATUS_COLORS[booking.status] ?? Colors.light.muted) : Colors.light.muted;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>{booking.title}</Text>
-      <Text style={styles.status}>{booking.status}</Text>
+    <Screen loading={loading}>
+      {booking ? (
+        <>
+          <View style={styles.hero}>
+            <View style={[styles.statusBadge, { backgroundColor: `${statusColor}18` }]}>
+              <Text style={[styles.statusText, { color: statusColor }]}>{booking.status.replace("_", " ")}</Text>
+            </View>
+            <Text style={styles.title}>{booking.title}</Text>
+            {booking.category ? <Text style={styles.category}>{booking.category.name}</Text> : null}
+          </View>
 
-      {booking.category ? (
-        <Text style={styles.detail}>Category: {booking.category.name}</Text>
+          {booking.description ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Details</Text>
+              <Text style={styles.description}>{booking.description}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Schedule & location</Text>
+            {booking.scheduledDate ? (
+              <DetailRow
+                icon="📅"
+                label="Date"
+                value={`${new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}${booking.scheduledTime ? ` at ${booking.scheduledTime}` : ""}`}
+              />
+            ) : (
+              <DetailRow icon="📅" label="Date" value="Flexible" />
+            )}
+            {booking.address || booking.city ? (
+              <DetailRow
+                icon="📍"
+                label="Location"
+                value={[booking.address, booking.city].filter(Boolean).join(", ")}
+              />
+            ) : null}
+          </View>
+
+          {booking.professional?.user.name ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Professional</Text>
+              <DetailRow icon="👤" label="Assigned to" value={booking.professional.user.name} />
+            </View>
+          ) : null}
+
+          {booking.payment ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Payment</Text>
+              <DetailRow icon="💳" label="Status" value={booking.payment.status} />
+            </View>
+          ) : null}
+        </>
       ) : null}
-      {booking.description ? (
-        <Text style={styles.detail}>{booking.description}</Text>
-      ) : null}
-      {booking.scheduledDate ? (
-        <Text style={styles.detail}>
-          Scheduled: {new Date(booking.scheduledDate).toLocaleString("en-IN")}
-          {booking.scheduledTime ? ` at ${booking.scheduledTime}` : ""}
-        </Text>
-      ) : null}
-      {booking.address ? (
-        <Text style={styles.detail}>
-          {booking.address}
-          {booking.city ? `, ${booking.city}` : ""}
-        </Text>
-      ) : null}
-      {booking.professional?.user.name ? (
-        <Text style={styles.detail}>Professional: {booking.professional.user.name}</Text>
-      ) : null}
-      {booking.payment ? (
-        <Text style={styles.detail}>Payment: {booking.payment.status}</Text>
-      ) : null}
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
+  hero: {
+    marginBottom: spacing.lg,
   },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
+  statusBadge: {
+    alignSelf: "flex-start",
+    borderRadius: radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: spacing.md,
   },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.light.background,
-  },
-  empty: {
-    color: Colors.light.muted,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: Colors.light.text,
-  },
-  status: {
-    fontSize: 14,
+  statusText: {
+    ...typography.caption,
     fontWeight: "700",
-    color: Colors.light.brand,
-    marginTop: 6,
-    marginBottom: 16,
+    textTransform: "capitalize",
   },
-  detail: {
-    fontSize: 15,
+  title: {
+    ...typography.hero,
+    fontSize: 26,
     color: Colors.light.text,
-    marginBottom: 10,
-    lineHeight: 22,
+  },
+  category: {
+    ...typography.subtitle,
+    color: Colors.light.brand,
+    marginTop: spacing.xs,
+    fontWeight: "600",
+  },
+  card: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+  },
+  cardTitle: {
+    ...typography.subtitle,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: spacing.md,
+  },
+  description: {
+    ...typography.body,
+    color: Colors.light.textSecondary,
+    lineHeight: 24,
+  },
+  row: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  rowIcon: {
+    fontSize: 18,
+    marginTop: 2,
+  },
+  rowContent: {
+    flex: 1,
+  },
+  rowLabel: {
+    ...typography.caption,
+    color: Colors.light.muted,
+    marginBottom: 2,
+  },
+  rowValue: {
+    ...typography.body,
+    color: Colors.light.text,
+    fontWeight: "500",
   },
 });

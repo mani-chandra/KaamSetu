@@ -2,19 +2,20 @@ import { Link } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import Colors from "@/constants/Colors";
+import { radii, shadows, spacing, typography } from "@/constants/theme";
 import type { Booking, BookingStatus } from "@/lib/types";
 
-const STATUS_COLORS: Record<BookingStatus, string> = {
-  REQUESTED: "#f59e0b",
-  CONFIRMED: "#3b82f6",
-  EN_ROUTE: "#8b5cf6",
-  IN_PROGRESS: "#0d9488",
-  COMPLETED: "#22c55e",
-  CANCELLED: "#ef4444",
+const STATUS_CONFIG: Record<BookingStatus, { color: string; bg: string; label: string }> = {
+  REQUESTED: { color: "#b45309", bg: "#fef3c7", label: "Requested" },
+  CONFIRMED: { color: "#1d4ed8", bg: "#dbeafe", label: "Confirmed" },
+  EN_ROUTE: { color: "#6d28d9", bg: "#ede9fe", label: "En route" },
+  IN_PROGRESS: { color: "#0f766e", bg: "#ccfbf1", label: "In progress" },
+  COMPLETED: { color: "#15803d", bg: "#dcfce7", label: "Completed" },
+  CANCELLED: { color: "#b91c1c", bg: "#fee2e2", label: "Cancelled" },
 };
 
 function formatDate(value?: string | null) {
-  if (!value) return "Flexible";
+  if (!value) return "Flexible date";
   return new Date(value).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -23,34 +24,57 @@ function formatDate(value?: string | null) {
 }
 
 export function BookingCard({ booking }: { booking: Booking }) {
-  const statusColor = STATUS_COLORS[booking.status] ?? Colors.light.muted;
+  const status = STATUS_CONFIG[booking.status] ?? {
+    color: Colors.light.muted,
+    bg: Colors.light.background,
+    label: booking.status,
+  };
 
   return (
     <Link href={`/booking/${booking.id}`} asChild>
-      <Pressable style={styles.card}>
-        <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>
-            {booking.title}
-          </Text>
-          <View style={[styles.badge, { backgroundColor: `${statusColor}20` }]}>
-            <Text style={[styles.badgeText, { color: statusColor }]}>{booking.status}</Text>
+      <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+        <View style={styles.topRow}>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title} numberOfLines={1}>
+              {booking.title}
+            </Text>
+            {booking.category ? (
+              <Text style={styles.category}>{booking.category.name}</Text>
+            ) : null}
+          </View>
+          <View style={[styles.badge, { backgroundColor: status.bg }]}>
+            <Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
 
-        {booking.category ? (
-          <Text style={styles.category}>{booking.category.name}</Text>
-        ) : null}
-
-        <View style={styles.meta}>
-          <Text style={styles.metaText}>{formatDate(booking.scheduledDate)}</Text>
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaIcon}>📅</Text>
+            <Text style={styles.metaText}>{formatDate(booking.scheduledDate)}</Text>
+          </View>
           {booking.scheduledTime ? (
-            <Text style={styles.metaText}>{booking.scheduledTime}</Text>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>🕐</Text>
+              <Text style={styles.metaText}>{booking.scheduledTime}</Text>
+            </View>
           ) : null}
-          {booking.city ? <Text style={styles.metaText}>{booking.city}</Text> : null}
+          {booking.city ? (
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>📍</Text>
+              <Text style={styles.metaText}>{booking.city}</Text>
+            </View>
+          ) : null}
         </View>
 
         {booking.professional?.user.name ? (
-          <Text style={styles.proName}>Pro: {booking.professional.user.name}</Text>
+          <View style={styles.proRow}>
+            <View style={styles.proAvatar}>
+              <Text style={styles.proInitial}>
+                {booking.professional.user.name[0]?.toUpperCase() ?? "P"}
+              </Text>
+            </View>
+            <Text style={styles.proName}>{booking.professional.user.name}</Text>
+          </View>
         ) : null}
       </Pressable>
     </Link>
@@ -59,53 +83,90 @@ export function BookingCard({ booking }: { booking: Booking }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.card,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.md,
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    marginBottom: 12,
+    borderColor: Colors.light.borderLight,
   },
-  header: {
+  pressed: {
+    opacity: 0.95,
+    transform: [{ scale: 0.995 }],
+  },
+  topRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  titleBlock: {
+    flex: 1,
   },
   title: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "600",
+    ...typography.subtitle,
+    fontWeight: "700",
     color: Colors.light.text,
   },
+  category: {
+    ...typography.caption,
+    color: Colors.light.brand,
+    fontWeight: "600",
+    marginTop: 2,
+  },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.full,
   },
   badgeText: {
     fontSize: 11,
     fontWeight: "700",
   },
-  category: {
-    marginTop: 6,
-    fontSize: 13,
-    color: Colors.light.brand,
-    fontWeight: "500",
-  },
-  meta: {
+  metaRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    marginTop: 10,
+    gap: spacing.md,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  metaIcon: {
+    fontSize: 12,
   },
   metaText: {
-    fontSize: 12,
+    ...typography.caption,
     color: Colors.light.muted,
   },
+  proRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.borderLight,
+  },
+  proAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: radii.full,
+    backgroundColor: Colors.light.brandMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proInitial: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.light.brandDark,
+  },
   proName: {
-    marginTop: 10,
-    fontSize: 13,
-    color: Colors.light.text,
+    ...typography.caption,
+    color: Colors.light.textSecondary,
+    fontWeight: "600",
   },
 });

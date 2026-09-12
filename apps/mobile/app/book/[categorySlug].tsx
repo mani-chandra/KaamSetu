@@ -1,17 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Screen } from "@/components/ui/Screen";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import Colors from "@/constants/Colors";
+import { radii, spacing } from "@/constants/theme";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Category } from "@/lib/types";
@@ -78,102 +74,56 @@ export default function BookScreen() {
     }
   }
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.light.brand} />
-      </View>
-    );
-  }
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Book {category?.name ?? categorySlug}</Text>
-
-      <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Describe what you need"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Address"
-        value={address}
-        onChangeText={setAddress}
-      />
-      <TextInput style={styles.input} placeholder="City" value={city} onChangeText={setCity} />
-      <TextInput
-        style={styles.input}
-        placeholder="Date (YYYY-MM-DD)"
-        value={scheduledDate}
-        onChangeText={setScheduledDate}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Preferred time"
-        value={scheduledTime}
-        onChangeText={setScheduledTime}
+    <Screen loading={loading}>
+      <ScreenHeader
+        eyebrow="New booking"
+        title={`Book ${category?.name ?? categorySlug}`}
+        subtitle="Tell us what you need and we'll match you with the right pro"
       />
 
-      <Pressable style={styles.button} onPress={handleSubmit} disabled={submitting}>
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Submit booking</Text>
-        )}
-      </Pressable>
-    </ScrollView>
+      <View style={styles.form}>
+        <Input label="Title" placeholder="Brief title for your request" value={title} onChangeText={setTitle} />
+        <Input
+          label="Description"
+          placeholder="Describe the work needed, any specifics…"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          style={styles.textArea}
+        />
+        <Input label="Address" placeholder="Street address" value={address} onChangeText={setAddress} />
+        <Input label="City" placeholder="Your city" value={city} onChangeText={setCity} />
+        <Input
+          label="Preferred date"
+          placeholder="YYYY-MM-DD"
+          value={scheduledDate}
+          onChangeText={setScheduledDate}
+        />
+        <Input
+          label="Preferred time"
+          placeholder="e.g. 10:00 AM"
+          value={scheduledTime}
+          onChangeText={setScheduledTime}
+        />
+      </View>
+
+      <Button label="Submit booking request" onPress={handleSubmit} loading={submitting} />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.light.background,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: Colors.light.text,
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: Colors.light.card,
+  form: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-    fontSize: 16,
+    borderColor: Colors.light.borderLight,
   },
   textArea: {
-    minHeight: 96,
+    minHeight: 100,
     textAlignVertical: "top",
-  },
-  button: {
-    backgroundColor: Colors.light.brand,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
   },
 });

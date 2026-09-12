@@ -2,6 +2,7 @@ import { Link } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import Colors from "@/constants/Colors";
+import { radii, shadows, spacing, typography } from "@/constants/theme";
 import type { Professional } from "@/lib/types";
 
 function formatCurrency(amount: number) {
@@ -38,9 +39,13 @@ export function ProfessionalCard({
         )}
         <View style={styles.headerText}>
           <Text style={styles.name}>{professional.user.name ?? "Professional"}</Text>
-          <Text style={styles.rating}>
-            ★ {professional.avgRating.toFixed(1)} ({professional.reviewCount})
-          </Text>
+          <View style={styles.ratingRow}>
+            <View style={styles.ratingBadge}>
+              <Text style={styles.ratingStar}>★</Text>
+              <Text style={styles.ratingValue}>{professional.avgRating.toFixed(1)}</Text>
+            </View>
+            <Text style={styles.reviewCount}>({professional.reviewCount} reviews)</Text>
+          </View>
           {professional.bio ? (
             <Text style={styles.bio} numberOfLines={2}>
               {professional.bio}
@@ -49,20 +54,29 @@ export function ProfessionalCard({
         </View>
       </View>
 
-      <View style={styles.meta}>
-        <Text style={styles.metaText}>{professional.experienceYears} yrs exp</Text>
-        <Text style={styles.metaText}>{professional.completedJobs} jobs</Text>
+      <View style={styles.metaRow}>
+        <View style={styles.metaChip}>
+          <Text style={styles.metaChipText}>{professional.experienceYears} yrs</Text>
+        </View>
+        <View style={styles.metaChip}>
+          <Text style={styles.metaChipText}>{professional.completedJobs} jobs</Text>
+        </View>
         {professional.user.city ? (
-          <Text style={styles.metaText}>{professional.user.city}</Text>
+          <View style={styles.metaChip}>
+            <Text style={styles.metaChipText}>{professional.user.city}</Text>
+          </View>
         ) : null}
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.price}>{priceLabel}</Text>
+        <View>
+          <Text style={styles.priceLabel}>Starting at</Text>
+          <Text style={styles.price}>{priceLabel}</Text>
+        </View>
         <View style={styles.actions}>
           <Link href={`/professional/${professional.id}`} asChild>
             <Pressable style={styles.outlineButton}>
-              <Text style={styles.outlineButtonText}>Profile</Text>
+              <Text style={styles.outlineButtonText}>View</Text>
             </Pressable>
           </Link>
           <Link
@@ -87,102 +101,143 @@ export function ProfessionalCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.card,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.md,
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    marginBottom: 12,
+    borderColor: Colors.light.borderLight,
   },
   header: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: radii.full,
   },
   avatarFallback: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#ccfbf1",
+    width: 60,
+    height: 60,
+    borderRadius: radii.full,
+    backgroundColor: Colors.light.brandMuted,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.light.brand,
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.light.brandDark,
   },
   headerText: {
     flex: 1,
   },
   name: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...typography.subtitle,
+    fontWeight: "700",
     color: Colors.light.text,
   },
-  rating: {
-    fontSize: 13,
-    color: Colors.light.muted,
-    marginTop: 2,
-  },
-  bio: {
-    fontSize: 13,
-    color: Colors.light.muted,
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     marginTop: 4,
   },
-  meta: {
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fef3c7",
+    borderRadius: radii.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    gap: 2,
+  },
+  ratingStar: {
+    fontSize: 11,
+    color: "#d97706",
+  },
+  ratingValue: {
+    ...typography.caption,
+    fontWeight: "700",
+    color: "#92400e",
+  },
+  reviewCount: {
+    ...typography.caption,
+    color: Colors.light.muted,
+  },
+  bio: {
+    ...typography.caption,
+    color: Colors.light.textSecondary,
+    marginTop: spacing.sm,
+    lineHeight: 18,
+  },
+  metaRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    marginTop: 12,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  metaText: {
-    fontSize: 12,
-    color: Colors.light.muted,
+  metaChip: {
+    backgroundColor: Colors.light.background,
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  metaChipText: {
+    ...typography.caption,
+    color: Colors.light.textSecondary,
+    fontWeight: "600",
   },
   footer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
-    marginTop: 14,
-    paddingTop: 14,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
+    borderTopColor: Colors.light.borderLight,
+  },
+  priceLabel: {
+    ...typography.caption,
+    color: Colors.light.muted,
+    marginBottom: 2,
   },
   price: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
     color: Colors.light.brand,
   },
   actions: {
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
   },
   outlineButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
     borderColor: Colors.light.border,
+    backgroundColor: Colors.light.surface,
   },
   outlineButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.caption,
+    fontWeight: "700",
     color: Colors.light.text,
   },
   primaryButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: radii.md,
     backgroundColor: Colors.light.brand,
+    ...shadows.sm,
   },
   primaryButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.caption,
+    fontWeight: "700",
     color: "#fff",
   },
 });

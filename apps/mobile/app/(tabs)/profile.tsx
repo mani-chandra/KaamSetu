@@ -1,15 +1,14 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Screen } from "@/components/ui/Screen";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import Colors from "@/constants/Colors";
+import { radii, shadows, spacing, typography } from "@/constants/theme";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Notification, User } from "@/lib/types";
@@ -41,144 +40,223 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>Sign in to manage your profile</Text>
-        <Pressable style={styles.button} onPress={() => router.push("/login")}>
-          <Text style={styles.buttonText}>Sign in</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.light.brand} />
-      </View>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <Screen scroll={false} edges={[]}>
+          <EmptyState
+            icon="👤"
+            title="Your profile"
+            description="Sign in to manage your account, view notifications, and update your details."
+            actionLabel="Sign in"
+            onAction={() => router.push("/login")}
+          />
+        </Screen>
+      </SafeAreaView>
     );
   }
 
   const profile = account ?? user;
+  const initials = (profile.name ?? "C")
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Profile</Text>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <Screen loading={loading} contentContainerStyle={styles.content} edges={[]}>
+        <ScreenHeader eyebrow="Account" title="Profile" />
 
-      <View style={styles.card}>
-        <Text style={styles.name}>{profile.name ?? "Customer"}</Text>
-        <Text style={styles.detail}>{profile.email}</Text>
-        {profile.phone ? <Text style={styles.detail}>{profile.phone}</Text> : null}
-        {profile.city ? <Text style={styles.detail}>{profile.city}</Text> : null}
-      </View>
-
-      <Text style={styles.sectionTitle}>Recent notifications</Text>
-      {notifications.length === 0 ? (
-        <Text style={styles.emptyText}>No notifications</Text>
-      ) : (
-        notifications.map((item) => (
-          <View key={item.id} style={styles.notification}>
-            <Text style={styles.notificationTitle}>{item.title}</Text>
-            <Text style={styles.notificationBody}>{item.message}</Text>
+        <View style={styles.profileCard}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-        ))
-      )}
+          <View style={styles.profileInfo}>
+            <Text style={styles.name}>{profile.name ?? "Customer"}</Text>
+            <Text style={styles.email}>{profile.email}</Text>
+            {profile.city ? (
+              <View style={styles.locationPill}>
+                <Text style={styles.locationText}>📍 {profile.city}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
 
-      <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutText}>Sign out</Text>
-      </Pressable>
-    </ScrollView>
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{notifications.length}</Text>
+            <Text style={styles.statLabel}>Recent alerts</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{profile.phone ? "✓" : "—"}</Text>
+            <Text style={styles.statLabel}>Phone verified</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        {notifications.length === 0 ? (
+          <View style={styles.emptyNotifications}>
+            <Text style={styles.emptyText}>You're all caught up — no new notifications.</Text>
+          </View>
+        ) : (
+          notifications.map((item) => (
+            <View key={item.id} style={styles.notification}>
+              <View style={styles.notificationDot} />
+              <View style={styles.notificationBody}>
+                <Text style={styles.notificationTitle}>{item.title}</Text>
+                <Text style={styles.notificationMessage}>{item.message}</Text>
+              </View>
+            </View>
+          ))
+        )}
+
+        <Button
+          label="Sign out"
+          variant="danger"
+          onPress={handleSignOut}
+          style={styles.signOut}
+        />
+      </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: Colors.light.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingTop: spacing.lg,
+    paddingBottom: 120,
   },
-  center: {
-    flex: 1,
+  profileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    ...shadows.md,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.full,
+    backgroundColor: Colors.light.brandMuted,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.light.background,
-    padding: 24,
   },
-  heading: {
+  avatarText: {
     fontSize: 22,
     fontWeight: "800",
-    color: Colors.light.text,
-    marginBottom: 12,
+    color: Colors.light.brandDark,
   },
-  card: {
-    backgroundColor: Colors.light.card,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    marginBottom: 20,
+  profileInfo: {
+    flex: 1,
+    gap: 4,
   },
   name: {
-    fontSize: 18,
-    fontWeight: "700",
+    ...typography.title,
+    fontSize: 20,
     color: Colors.light.text,
   },
-  detail: {
-    fontSize: 14,
+  email: {
+    ...typography.body,
     color: Colors.light.muted,
+  },
+  locationPill: {
+    alignSelf: "flex-start",
+    backgroundColor: Colors.light.brandSoft,
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginTop: 4,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.light.text,
-    marginBottom: 10,
-  },
-  notification: {
-    backgroundColor: Colors.light.card,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  notificationTitle: {
-    fontSize: 14,
+  locationText: {
+    ...typography.caption,
+    color: Colors.light.brandDark,
     fontWeight: "600",
-    color: Colors.light.text,
   },
-  notificationBody: {
-    fontSize: 13,
-    color: Colors.light.muted,
-    marginTop: 4,
+  statsRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  emptyText: {
-    fontSize: 14,
-    color: Colors.light.muted,
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: Colors.light.brand,
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  signOutButton: {
-    marginTop: 24,
-    borderRadius: 10,
-    paddingVertical: 14,
+  statBox: {
+    flex: 1,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ef4444",
+    borderColor: Colors.light.borderLight,
   },
-  signOutText: {
-    color: "#ef4444",
+  statValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.light.brand,
+    marginBottom: 4,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: Colors.light.muted,
+    textAlign: "center",
+  },
+  sectionTitle: {
+    ...typography.subtitle,
     fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: spacing.md,
+  },
+  notification: {
+    flexDirection: "row",
+    gap: spacing.md,
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+  },
+  notificationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.light.brand,
+    marginTop: 6,
+  },
+  notificationBody: {
+    flex: 1,
+  },
+  notificationTitle: {
+    ...typography.subtitle,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  notificationMessage: {
+    ...typography.caption,
+    color: Colors.light.muted,
+    lineHeight: 18,
+  },
+  emptyNotifications: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.light.borderLight,
+  },
+  emptyText: {
+    ...typography.body,
+    color: Colors.light.muted,
+    textAlign: "center",
+  },
+  signOut: {
+    marginTop: spacing.xl,
   },
 });

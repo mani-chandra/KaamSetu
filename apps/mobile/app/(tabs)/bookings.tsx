@@ -1,15 +1,14 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { RefreshControl, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { BookingCard } from "@/components/BookingCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Screen } from "@/components/ui/Screen";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import Colors from "@/constants/Colors";
+import { spacing } from "@/constants/theme";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Booking } from "@/lib/types";
@@ -41,69 +40,66 @@ export default function BookingsScreen() {
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>Sign in to view your bookings</Text>
-      </View>
-    );
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.light.brand} />
-      </View>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <Screen scroll={false} edges={[]}>
+          <EmptyState
+            icon="📅"
+            title="Your bookings live here"
+            description="Sign in to view upcoming services, track progress, and manage appointments."
+            actionLabel="Sign in"
+            onAction={() => router.push("/login")}
+          />
+        </Screen>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            loadBookings();
-          }}
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <Screen
+        loading={loading}
+        contentContainerStyle={styles.content}
+        edges={[]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              loadBookings();
+            }}
+            tintColor={Colors.light.brand}
+          />
+        }
+      >
+        <ScreenHeader
+          eyebrow="Activity"
+          title="My bookings"
+          subtitle="Track and manage your service requests"
         />
-      }
-    >
-      <Text style={styles.heading}>My bookings</Text>
-      {bookings.length === 0 ? (
-        <Text style={styles.emptyText}>No bookings yet</Text>
-      ) : (
-        bookings.map((booking) => <BookingCard key={booking.id} booking={booking} />)
-      )}
-    </ScrollView>
+
+        {bookings.length === 0 ? (
+          <EmptyState
+            icon="✨"
+            title="No bookings yet"
+            description="Browse services on Home and book a verified professional in minutes."
+            actionLabel="Browse services"
+            onAction={() => router.push("/(tabs)")}
+          />
+        ) : (
+          bookings.map((booking) => <BookingCard key={booking.id} booking={booking} />)
+        )}
+      </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: Colors.light.background,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.light.background,
-    padding: 24,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: Colors.light.text,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: Colors.light.muted,
-    textAlign: "center",
+    paddingTop: spacing.lg,
+    paddingBottom: 120,
   },
 });
