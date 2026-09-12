@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -8,8 +8,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
-
 import { BookingCard } from "@/components/BookingCard";
 import Colors from "@/constants/Colors";
 import { api } from "@/lib/api";
@@ -36,12 +34,10 @@ export default function BookingsScreen() {
     }
   }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      loadBookings();
-    }, [loadBookings])
-  );
+  useEffect(() => {
+    setLoading(true);
+    loadBookings();
+  }, [loadBookings]);
 
   if (!user) {
     return (
