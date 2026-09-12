@@ -10,10 +10,18 @@ datasource db {
 enum UserRole {
   CUSTOMER
   PROFESSIONAL
+  SHOP_OWNER
   ADMIN
 }
 
 enum ProfessionalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ShopStatus {
   PENDING
   APPROVED
   REJECTED
@@ -128,6 +136,7 @@ model User {
   sessions            Session[]
   customerProfile     CustomerProfile?
   professionalProfile ProfessionalProfile?
+  shopProfile         ShopProfile?
   notifications       Notification[]
   subscriptions       Subscription[]
   supportTickets      SupportTicket[]
@@ -256,6 +265,7 @@ model ServiceCategory {
   bookings             Booking[]
   predefinedSkills     PredefinedSkill[]
   servicePackages      ServicePackage[]
+  shops                ShopProfile[]     @relation("ShopCategories")
 
   @@index([groupId])
 }
@@ -272,6 +282,36 @@ model CategoryGroup {
   updatedAt   DateTime @updatedAt
 
   categories ServiceCategory[]
+  shops      ShopProfile[]
+}
+
+model ShopProfile {
+  id              String     @id @default(cuid())
+  userId          String     @unique
+  status          ShopStatus @default(PENDING)
+  shopName        String
+  slug            String     @unique
+  description     String?
+  address         String?
+  city            String?
+  pincode         String?
+  phone           String?
+  logoUrl         String?
+  gstNumber       String?
+  categoryGroupId String
+  documentUrls    Json       @default("[]")
+  rejectionReason String?
+  isVerified      Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryGroup CategoryGroup     @relation(fields: [categoryGroupId], references: [id])
+  categories    ServiceCategory[] @relation("ShopCategories")
+
+  @@index([categoryGroupId])
+  @@index([status])
+  @@index([city])
 }
 
 model ServicePage {

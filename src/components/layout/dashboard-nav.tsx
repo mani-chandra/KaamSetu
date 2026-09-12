@@ -58,11 +58,35 @@ export function ProDashboardNav() {
   );
 }
 
+export function ShopDashboardNav() {
+  const { t } = useI18n();
+  const links = [
+    { href: "/shop/dashboard", label: t.dashboard.overview },
+    { href: "/dashboard/notifications", label: t.dashboard.notifications },
+    { href: "/account/settings", label: t.account.settings },
+  ];
+
+  return (
+    <nav className="space-y-1 glass-panel rounded-xl p-2 border border-white/10">
+      {links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className="block px-3 py-2 rounded-md text-sm hover:bg-brand/10 hover:text-brand transition-colors"
+        >
+          {link.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export function AdminNav() {
   const { t } = useI18n();
   const links = [
     { href: "/admin", label: t.dashboard.adminDashboard },
     { href: "/admin/professionals", label: t.dashboard.professionals },
+    { href: "/admin/shops", label: t.dashboard.shops },
     { href: "/admin/bookings", label: t.dashboard.bookings },
     { href: "/admin/users", label: t.dashboard.users },
     { href: "/admin/categories", label: t.dashboard.categories },

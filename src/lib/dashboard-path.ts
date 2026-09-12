@@ -6,6 +6,8 @@ export function getDashboardPath(role: UserRole | undefined) {
       return "/admin";
     case "PROFESSIONAL":
       return "/pro/dashboard";
+    case "SHOP_OWNER":
+      return "/shop/dashboard";
     default:
       return "/dashboard";
   }

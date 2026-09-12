@@ -31,6 +31,12 @@ export default NextAuth(authConfig).auth((req) => {
     }
   }
 
+  if (pathname.startsWith("/shop/dashboard")) {
+    if (!isLoggedIn || role !== "SHOP_OWNER") {
+      return NextResponse.redirect(new URL("/auth/login", req.url));
+    }
+  }
+
   if (pathname.startsWith("/dashboard")) {
     if (!isLoggedIn || (role !== "CUSTOMER" && role !== "ADMIN")) {
       return NextResponse.redirect(new URL("/auth/login", req.url));
@@ -53,6 +59,7 @@ export const config = {
     "/book/:path*",
     "/dashboard/:path*",
     "/pro/dashboard/:path*",
+    "/shop/dashboard/:path*",
     "/admin/:path*",
     "/account/:path*",
   ],

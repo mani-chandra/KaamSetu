@@ -129,6 +129,12 @@ export function LoginForm() {
                   {t.auth.registerHere}
                 </Link>
               </p>
+              <p>
+                {t.auth.areShopOwner}{" "}
+                <Link href="/shop/register" className="text-brand hover:underline font-medium">
+                  {t.auth.registerShopHere}
+                </Link>
+              </p>
             </div>
           </div>
         </div>

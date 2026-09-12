@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 
-type AppRole = "CUSTOMER" | "PROFESSIONAL" | "ADMIN";
+type AppRole = "CUSTOMER" | "PROFESSIONAL" | "SHOP_OWNER" | "ADMIN";
 
 /**
  * Edge-safe Auth.js config — used by middleware only.

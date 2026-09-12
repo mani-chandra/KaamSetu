@@ -12,6 +12,7 @@ export function HeaderNav() {
       <Link href="/services" className="hover:text-brand transition-colors">{t.nav.categories}</Link>
       <Link href="/memberships" className="hover:text-brand transition-colors">{t.nav.memberships}</Link>
       <Link href="/pro/register" className="hover:text-brand transition-colors">{t.nav.becomeProfessional}</Link>
+      <Link href="/shop/register" className="hover:text-brand transition-colors">{t.nav.registerShop}</Link>
     </nav>
   );
 }

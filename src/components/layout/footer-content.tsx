@@ -9,7 +9,7 @@ export function FooterContent() {
   return (
     <footer className="glass-panel border-t border-white/10 mt-auto rounded-none">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-5">
           <div>
             <h3 className="font-bold text-lg bg-gradient-to-r from-brand-light to-brand bg-clip-text text-transparent mb-3">
               KaamSetu
@@ -29,6 +29,13 @@ export function FooterContent() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/pro/register" className="hover:text-brand transition-colors">{t.footer.joinProfessional}</Link></li>
               <li><Link href="/pro/dashboard" className="hover:text-brand transition-colors">{t.footer.professionalDashboard}</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3 text-foreground/90">{t.footer.forShops}</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/shop/register" className="hover:text-brand transition-colors">{t.footer.registerShop}</Link></li>
+              <li><Link href="/shop/dashboard" className="hover:text-brand transition-colors">{t.footer.shopDashboard}</Link></li>
             </ul>
           </div>
           <div>

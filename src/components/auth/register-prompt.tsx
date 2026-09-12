@@ -17,9 +17,11 @@ function shouldSkipPath(pathname: string) {
   return (
     pathname.startsWith("/auth") ||
     pathname.startsWith("/pro/register") ||
+    pathname.startsWith("/shop/register") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/pro/dashboard")
+    pathname.startsWith("/pro/dashboard") ||
+    pathname.startsWith("/shop/dashboard")
   );
 }
 
