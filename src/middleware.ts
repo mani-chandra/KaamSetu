@@ -2,11 +2,18 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
 import { getDashboardPath } from "@/lib/dashboard-path";
+import { handleCorsPreflight, isMobileCorsRoute, withCors } from "@/lib/cors";
 
 export default NextAuth(authConfig).auth((req) => {
   const { pathname, search } = req.nextUrl;
   const role = req.auth?.user?.role;
   const isLoggedIn = !!req.auth;
+
+  if (isMobileCorsRoute(pathname)) {
+    const preflight = handleCorsPreflight(req);
+    if (preflight) return preflight;
+    return withCors(NextResponse.next(), req.headers.get("origin"));
+  }
 
   if (pathname.startsWith("/book")) {
     if (!isLoggedIn) {
@@ -56,6 +63,14 @@ export default NextAuth(authConfig).auth((req) => {
 
 export const config = {
   matcher: [
+    "/api/mobile/:path*",
+    "/api/categories",
+    "/api/cities",
+    "/api/recommendations",
+    "/api/bookings/:path*",
+    "/api/notifications",
+    "/api/account",
+    "/api/professionals/:path*",
     "/book/:path*",
     "/dashboard/:path*",
     "/pro/dashboard/:path*",

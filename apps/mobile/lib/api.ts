@@ -32,16 +32,27 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
     headers.Authorization = `Bearer ${options.token}`;
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: options.method ?? (options.body ? "POST" : "GET"),
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new ApiError(
+      `Cannot reach server at ${API_URL}. Check your connection and EXPO_PUBLIC_API_URL.`,
+      0
+    );
+  }
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new ApiError(data.error ?? "Request failed", response.status);
+    throw new ApiError(
+      (data as { error?: string }).error ?? `Request failed (${response.status})`,
+      response.status
+    );
   }
 
   return data as T;

@@ -62,6 +62,8 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        <Text style={styles.hint}>Demo: customer@demo.com / customer123</Text>
+
         <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -111,6 +113,12 @@ const styles = StyleSheet.create({
     color: "#ef4444",
     marginBottom: 12,
     textAlign: "center",
+  },
+  hint: {
+    fontSize: 12,
+    color: Colors.light.muted,
+    textAlign: "center",
+    marginBottom: 12,
   },
   button: {
     backgroundColor: Colors.light.brand,
