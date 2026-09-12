@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { getRequestSession } from "@/lib/request-auth";
 import { prisma } from "@/lib/prisma";
 import {
   createBookingRecord,
@@ -51,7 +51,7 @@ async function getOrCreateCustomer(userId: string) {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
+    const session = await getRequestSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Please sign in to book" }, { status: 401 });
     }
@@ -111,8 +111,8 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
-  const session = await auth();
+export async function GET(req: Request) {
+  const session = await getRequestSession(req);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
