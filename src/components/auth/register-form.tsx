@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthScene } from "@/components/3d/auth-scene";
+import { PhoneOtpVerification } from "@/components/auth/phone-otp-verification";
 import { useI18n } from "@/lib/i18n/context";
 import { Users, ArrowRight, Sparkles } from "lucide-react";
 
@@ -15,11 +16,20 @@ export function RegisterForm() {
   const { t } = useI18n();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!verificationToken) {
+      setError(t.auth.verifyPhoneFirst);
+      setLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.currentTarget);
     const res = await fetch("/api/auth/register", {
@@ -29,8 +39,9 @@ export function RegisterForm() {
         name: formData.get("name"),
         email: formData.get("email"),
         password: formData.get("password"),
-        phone: formData.get("phone"),
-        city: formData.get("city"),
+        phone,
+        verificationToken,
+        city,
       }),
     });
 
@@ -38,7 +49,7 @@ export function RegisterForm() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Registration failed");
+      setError(data.error === "verifyPhoneFirst" ? t.auth.verifyPhoneFirst : data.error || "Registration failed");
       return;
     }
 
@@ -87,16 +98,14 @@ export function RegisterForm() {
                 <Label htmlFor="email">{t.auth.email}</Label>
                 <Input id="email" name="email" type="email" required className="bg-background/50 border-white/10" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">{t.auth.phone}</Label>
-                  <Input id="phone" name="phone" type="tel" className="bg-background/50 border-white/10" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">{t.auth.city}</Label>
-                  <Input id="city" name="city" placeholder="Mumbai" className="bg-background/50 border-white/10" />
-                </div>
-              </div>
+              <PhoneOtpVerification
+                phone={phone}
+                onPhoneChange={setPhone}
+                onVerified={(token) => setVerificationToken(token)}
+                showCity
+                city={city}
+                onCityChange={setCity}
+              />
               <div className="space-y-2">
                 <Label htmlFor="password">{t.auth.password}</Label>
                 <Input

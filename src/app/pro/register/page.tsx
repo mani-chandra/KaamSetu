@@ -20,6 +20,7 @@ import { OptionPicker } from "@/components/pro/option-picker";
 import { GroupedCategoryPicker } from "@/components/pro/grouped-category-picker";
 import { useI18n } from "@/lib/i18n/context";
 import { ImmersiveBackground } from "@/components/3d/immersive-background";
+import { PhoneOtpVerification } from "@/components/auth/phone-otp-verification";
 
 type Category = { id: string; name: string; slug: string; icon?: string | null };
 type CategoryGroup = {
@@ -45,6 +46,7 @@ export default function ProRegisterPage() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [verificationToken, setVerificationToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -150,11 +152,18 @@ export default function ProRegisterPage() {
     setLoading(true);
     setError("");
 
+    if (!verificationToken) {
+      setError(t.auth.verifyPhoneFirst);
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch("/api/pro/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        verificationToken,
         skills: form.specializations,
         documentUrls,
         profilePhotoUrl,
@@ -166,7 +175,7 @@ export default function ProRegisterPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Registration failed");
+      setError(data.error === "verifyPhoneFirst" ? t.auth.verifyPhoneFirst : data.error || "Registration failed");
       return;
     }
 
@@ -199,26 +208,25 @@ export default function ProRegisterPage() {
                 <Label>{t.auth.password}</Label>
                 <Input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t.auth.phone}</Label>
-                  <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t.auth.city}</Label>
-                  <Select value={form.city} onValueChange={(v) => update("city", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t.auth.city} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cities.map((city) => (
-                        <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <PhoneOtpVerification
+                phone={form.phone}
+                onPhoneChange={(phone) => update("phone", phone)}
+                onVerified={(token) => setVerificationToken(token)}
+              />
+              <div className="space-y-2">
+                <Label>{t.auth.city}</Label>
+                <Select value={form.city} onValueChange={(v) => update("city", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.auth.city} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((city) => (
+                      <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Button onClick={() => setStep(2)} className="w-full" disabled={!form.city}>
+              <Button onClick={() => setStep(2)} className="w-full" disabled={!form.city || !verificationToken}>
                 {t.common.continue}
               </Button>
             </div>

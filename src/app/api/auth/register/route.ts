@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
+import { consumePhoneVerification, isPhoneRegistered } from "@/lib/phone-verification";
 
 const schema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  phone: z.string().optional(),
+  phone: z.string().min(10),
+  verificationToken: z.string().min(1),
   city: z.string().optional(),
 });
 
@@ -21,6 +23,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
     }
 
+    const verification = await consumePhoneVerification(data.phone, data.verificationToken);
+    if (!verification.success) {
+      return NextResponse.json({ error: "verifyPhoneFirst" }, { status: 400 });
+    }
+
+    if (await isPhoneRegistered(verification.phone)) {
+      return NextResponse.json({ error: "Phone already registered" }, { status: 400 });
+    }
+
     const passwordHash = await hashPassword(data.password);
 
     await prisma.user.create({
@@ -28,7 +39,8 @@ export async function POST(req: Request) {
         name: data.name,
         email: data.email,
         passwordHash,
-        phone: data.phone,
+        phone: verification.phone,
+        phoneVerified: new Date(),
         city: data.city,
         role: "CUSTOMER",
         customerProfile: { create: {} },

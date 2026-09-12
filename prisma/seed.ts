@@ -57,7 +57,8 @@ async function main() {
       name: "Demo Customer",
       passwordHash: customerPassword,
       role: UserRole.CUSTOMER,
-      phone: "+91 9876543210",
+      phone: "+919876543210",
+      phoneVerified: new Date(),
       city: "Mumbai",
       customerProfile: {
         create: {
@@ -228,7 +229,8 @@ async function main() {
       name: "Rajesh Kumar",
       passwordHash: proPassword,
       role: UserRole.PROFESSIONAL,
-      phone: "+91 9876543211",
+      phone: "+919876543211",
+      phoneVerified: new Date(),
       city: "Mumbai",
       image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200",
       professionalProfile: {
@@ -289,7 +291,8 @@ async function main() {
       name: "Priya Sharma",
       passwordHash: proPassword,
       role: UserRole.PROFESSIONAL,
-      phone: "+91 9876543212",
+      phone: "+919876543212",
+      phoneVerified: new Date(),
       city: "Mumbai",
       image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200",
       professionalProfile: {
